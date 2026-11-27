@@ -1,23 +1,25 @@
 import { useTranslations } from "next-intl";
-import type { RefereeProgress, ReferralRules } from "@/lib/economy/referral";
+import { missingSteps, type RefereeProgress, type ReferralRules } from "@/lib/economy/referral";
 
 const HOUR = 3_600_000;
 
 /** Les quatre conditions de qualification d'un filleul, cochées une à une, boosters en jauge. */
 export function RefereeChecklist({ progress, rules, now }: { progress: RefereeProgress; rules: ReferralRules; now: Date }) {
   const t = useTranslations("economy.referral.check");
+  // Cochées par la règle du serveur (missingSteps qualifie le parrainage) : l'écran ne peut pas en dériver
+  const missing = new Set(missingSteps(progress, rules, now));
   const ageHours = Math.floor((now.getTime() - progress.createdAt.getTime()) / HOUR);
   const steps = [
-    { key: "account", done: !progress.isGuest && !progress.bannedAt, label: t("account") },
-    ...(rules.requireVerified ? [{ key: "verified", done: progress.verified, label: t("verified") }] : []),
+    { key: "account", done: !missing.has("ACCOUNT"), label: t("account") },
+    ...(rules.requireVerified ? [{ key: "verified", done: !missing.has("VERIFIED"), label: t("verified") }] : []),
     {
       key: "age",
-      done: ageHours >= rules.minAccountAgeHours,
+      done: !missing.has("AGE"),
       label: t("age", { hours: Math.min(ageHours, rules.minAccountAgeHours), total: rules.minAccountAgeHours }),
     },
     {
       key: "boosters",
-      done: progress.boostersOpened >= rules.minBoostersOpened,
+      done: !missing.has("BOOSTERS"),
       label: t("boosters", { count: Math.min(progress.boostersOpened, rules.minBoostersOpened), total: rules.minBoostersOpened }),
     },
   ];

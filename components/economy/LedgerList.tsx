@@ -59,16 +59,25 @@ export function LedgerList({
           const label = t(`reasons.${row.reason}`);
           const createdAt = new Date(row.createdAt);
           return (
-            <li key={row.id} className="flex min-h-14 items-center justify-between gap-3 px-4 py-2">
+            <li key={row.id} className="relative flex min-h-14 items-center justify-between gap-3 px-4 py-2">
               <div className="flex min-w-0 flex-col">
                 {href ? (
-                  <Link href={href} className="truncate font-bold text-link underline-offset-4 hover:underline">
+                  // Toute la rangée est la zone tactile du lien (la ligne de texte seule fait 20 px de haut)
+                  <Link
+                    href={href}
+                    className="truncate font-bold text-link underline-offset-4 after:absolute after:inset-0 after:content-[''] hover:underline"
+                  >
                     {label}
                   </Link>
                 ) : (
                   <span className="truncate font-bold">{label}</span>
                 )}
-                <time dateTime={createdAt.toISOString()} className="text-xs text-text-muted" title={format.dateTime(createdAt, { dateStyle: "medium", timeStyle: "short" })}>
+                {/* Au-dessus du calque du lien : la date garde son infobulle */}
+                <time
+                  dateTime={createdAt.toISOString()}
+                  className="relative text-xs text-text-muted"
+                  title={format.dateTime(createdAt, { dateStyle: "medium", timeStyle: "short" })}
+                >
                   {format.relativeTime(createdAt, now)}
                 </time>
               </div>

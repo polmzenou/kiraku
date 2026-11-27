@@ -1,18 +1,15 @@
 "use client";
 
-import { useRaritySeals } from "@/lib/catalog/use-rarities";
-
 import { domAnimation, LazyMotion, m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
+import { useReducedFx } from "@/components/motion/MotionPreference";
 import { Link } from "@/i18n/navigation";
 import type { OpenedCardView } from "@/lib/boosters/view";
-
+import { useRarityDefinitions, useRaritySeals } from "@/lib/catalog/use-rarities";
 import { chargeFor, leakFor } from "../opening/RarityFx";
-import { useRarityDefinitions } from "@/lib/catalog/use-rarities";
 import { FlipCard, type FlipPhase } from "../opening/RevealCard";
 import { Button } from "../ui/Button";
-import { useReducedFx } from "@/components/motion/MotionPreference";
 
 /** Temps face cachée avant que la carte commence à frémir. */
 const BACK_MS = 550;

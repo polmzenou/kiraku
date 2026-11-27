@@ -94,9 +94,10 @@ export default async function AdminShopPage({ searchParams }: PageProps<"/[local
                   {t("purchase", {
                     user: p.user.username,
                     item: localize(parseLocalized(p.shopItem.name), locale),
-                    amount: p.amount,
-                    currency: p.currency,
-                    status: p.status,
+                    // Un achat en euros est enregistré en centimes
+                    amount: p.currency === "EUR" ? p.amount / 100 : p.amount,
+                    currency: t(`purchaseCurrency.${p.currency}`),
+                    status: t(`purchaseStatus.${p.status}`),
                   })}
                 </span>
                 <time dateTime={p.createdAt.toISOString()} className="text-xs text-text-muted">

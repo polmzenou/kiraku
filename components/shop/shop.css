@@ -675,25 +675,5 @@
 :root[data-motion="reduced"] .shop-shoji {
   display: none;
 }
-
-/* Mouvement réduit : rien ne se déplace, seuls les fondus restent */
-@media (prefers-reduced-motion: reduce) {
-  .shop-pack,
-  .shop-lead,
-  .shop-ghost,
-  .shop-tilt,
-  .shop-hero-main,
-  .shop-hero-side,
-  .shop-hero-aura {
-    transition: none;
-  }
-}
-:root[data-motion="reduced"] .shop-pack,
-:root[data-motion="reduced"] .shop-lead,
-:root[data-motion="reduced"] .shop-ghost,
-:root[data-motion="reduced"] .shop-tilt,
-:root[data-motion="reduced"] .shop-hero-main,
-:root[data-motion="reduced"] .shop-hero-side,
-:root[data-motion="reduced"] .shop-hero-aura {
-  transition: none;
-}
+/* Les transitions des cartes et de la vedette n'ont pas de règle ici : en mouvement réduit, le kill-switch de
+   globals.css les ramène toutes à 0,01 ms (fondus compris) */

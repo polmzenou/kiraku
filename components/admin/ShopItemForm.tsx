@@ -6,7 +6,7 @@ import { useState, useTransition } from "react";
 import { SHOP_LIMIT_PERIODS, shopItemInputSchema, type ShopItemInput, type ShopLimitPeriod } from "@/lib/economy/shop";
 import { saveShopItemAction } from "@/server/actions/admin-economy";
 import { Button } from "../ui/Button";
-import { Field, FormMessage, inputClass, NumberField, OptionalNumberField, SelectField, TextField, Toggle } from "./fields";
+import { Field, FormMessage, inputClass, NumberField, OptionalNumberField, SelectField, TextField, toLocalInput, Toggle } from "./fields";
 
 const emptyItem = (lotId: string): ShopItemInput => ({
   slug: "",
@@ -24,13 +24,7 @@ const emptyItem = (lotId: string): ShopItemInput => ({
   sortOrder: 0,
 });
 
-/** Date → valeur d'un champ datetime-local (heure locale du navigateur de l'admin). */
-function toLocalInput(d: Date | null): string {
-  if (!d) return "";
-  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 16);
-}
-
+/** Date et heure en heure locale du navigateur de l'admin (champ datetime-local). */
 function DateField({ label, value, onChange }: { label: string; value: Date | null; onChange: (d: Date | null) => void }) {
   return (
     <Field label={label}>
@@ -38,7 +32,7 @@ function DateField({ label, value, onChange }: { label: string; value: Date | nu
         <input
           id={id}
           type="datetime-local"
-          value={toLocalInput(value)}
+          value={toLocalInput(value?.toISOString() ?? null)}
           onChange={(e) => onChange(e.target.value ? new Date(e.target.value) : null)}
           className={inputClass}
         />

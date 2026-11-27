@@ -113,7 +113,11 @@ export async function claimMissionAction(input: unknown): Promise<ClaimResult> {
     return { ok: true, reward: await summarize(grant) };
   } catch (e) {
     if (e instanceof MissionError) {
-      if (e.code === "NOT_DONE" || e.code === "ALREADY_CLAIMED") return { ok: false, error: e.code };
+      if (e.code === "NOT_DONE" || e.code === "ALREADY_CLAIMED") {
+        // Réclamée dans un autre onglet, ou période changée : l'erreur et la page à jour arrivent ensemble
+        refresh();
+        return { ok: false, error: e.code };
+      }
       return { ok: false, error: e.code === "NOT_FOUND" ? "INVALID" : "UNAVAILABLE" };
     }
     return unexpected("mission", e);
@@ -155,7 +159,11 @@ export async function claimAllMissionsAction(): Promise<ClaimResult> {
     }
     console.error("[economie] missions (tout réclamer)", e);
   }
-  if (claimed === 0) return { ok: false, error: "NOT_DONE" };
+  if (claimed === 0) {
+    // Tout était déjà pris (autre onglet) : la page montre l'état réel avec l'erreur
+    refresh();
+    return { ok: false, error: "NOT_DONE" };
+  }
   forgetClaimableMission(g.user.id);
   refresh();
   return { ok: true, reward: await summarize(total) };

@@ -80,8 +80,13 @@ export function LotSendPanel({ lots }: { lots: { id: string; name: string }[] })
           disabled={pending || username.trim().length < 3}
           onClick={() =>
             startTransition(async () => {
-              const r = await grantLotToUserAction({ lotId, username, reason, message: note });
-              setMessage({ ok: r.ok, text: describe(r) });
+              try {
+                const r = await grantLotToUserAction({ lotId, username, reason, message: note });
+                setMessage({ ok: r.ok, text: describe(r) });
+              } catch {
+                // Erreur hors des cas prévus (failure() la relance) : un message, pas l'écran d'erreur
+                setMessage({ ok: false, text: t("errors.unexpected") });
+              }
             })
           }
         >
@@ -139,8 +144,12 @@ export function ResumeBroadcastButton({ broadcastId }: { broadcastId: string }) 
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
-            const r = await resumeLotBroadcastAction({ broadcastId });
-            setText(r.ok ? (r.done ? t("sent", { count: r.granted ?? 0 }) : t("partial", { count: r.granted ?? 0 })) : t(`errors.${r.error}`));
+            try {
+              const r = await resumeLotBroadcastAction({ broadcastId });
+              setText(r.ok ? (r.done ? t("sent", { count: r.granted ?? 0 }) : t("partial", { count: r.granted ?? 0 })) : t(`errors.${r.error}`));
+            } catch {
+              setText(t("errors.unexpected"));
+            }
           })
         }
       >

@@ -23,7 +23,11 @@ export default async function AchievementsPage() {
     );
   }
 
-  const board = await syncAchievements(user.id);
+  // Le succès mis en avant ne dépend pas du calcul : les deux lectures partent ensemble
+  const [board, { featuredAchievement }] = await Promise.all([
+    syncAchievements(user.id),
+    prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { featuredAchievement: true } }),
+  ]);
   if (!board) {
     return (
       <PageShell>
@@ -32,7 +36,6 @@ export default async function AchievementsPage() {
       </PageShell>
     );
   }
-  const { featuredAchievement } = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { featuredAchievement: true } });
 
   const tile = (a: AchievementDef, p: AchievementProgress): AchievementTileView => {
     const hidden = Boolean(a.secret) && !p.unlocked;

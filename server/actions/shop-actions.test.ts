@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Règle de la boutique là où elle s'applique : l'achat refuse un article bloqué sans débit, l'admin
-// refuse de mettre en vente un sachet scellé ou du Mythique mais laisse toujours désactiver.
+// refuse de mettre en vente un sachet scellé ou du Mythique mais laisse toujours désactiver. Et une mission
+// déjà réclamée ailleurs renvoie son erreur avec la page à jour, comme un achat refusé.
 
 const m = vi.hoisted(() => {
   class ShopError extends Error {
@@ -9,8 +10,15 @@ const m = vi.hoisted(() => {
       super(code);
     }
   }
+  class MissionError extends Error {
+    constructor(readonly code: string) {
+      super(code);
+    }
+  }
   return {
     ShopError,
+    MissionError,
+    claimMissionWith: vi.fn(),
     refresh: vi.fn(),
     loadShopItemIssue: vi.fn(),
     lotContentIssue: vi.fn(),
@@ -44,12 +52,12 @@ vi.mock("../economy/shop-core", () => ({ buyWithZeniWith: m.buyWithZeniWith, Sho
 vi.mock("../economy/deps", () => ({ lotDeps: () => ({}) }));
 vi.mock("../boosters/display", () => ({ cardViews: async () => new Map() }));
 vi.mock("../economy/lots", () => ({ LotError: class extends Error {} }));
-vi.mock("../economy/missions-core", () => ({ claimMissionWith: vi.fn(), MissionError: class extends Error {} }));
+vi.mock("../economy/missions-core", () => ({ claimMissionWith: m.claimMissionWith, MissionError: m.MissionError }));
 vi.mock("../economy/queries", () => ({ listLedger: vi.fn(), forgetClaimableMission: vi.fn() }));
 vi.mock("../economy/referral", () => ({ attachReferral: vi.fn(), qualifyLater: vi.fn() }));
 vi.mock("../economy/referral-core", () => ({ claimReferralWith: vi.fn(), ReferralError: class extends Error {} }));
 
-const { buyShopItemAction } = await import("./economy");
+const { buyShopItemAction, claimMissionAction } = await import("./economy");
 const { saveShopItemAction } = await import("./admin-economy");
 
 beforeEach(() => {
@@ -84,6 +92,20 @@ describe("achat en boutique", () => {
     m.buyWithZeniWith.mockRejectedValue(new m.ShopError("STALE"));
     expect(await buyShopItemAction({ shopItemId: "item", expectedPrice: 900 })).toEqual({ ok: false, error: "STALE" });
     expect(m.refresh).toHaveBeenCalledOnce();
+  });
+});
+
+describe("réclamation d'une mission", () => {
+  it("déjà réclamée (autre onglet) : l'erreur arrive avec la page à jour", async () => {
+    m.claimMissionWith.mockRejectedValue(new m.MissionError("ALREADY_CLAIMED"));
+    expect(await claimMissionAction({ missionId: "mission" })).toEqual({ ok: false, error: "ALREADY_CLAIMED" });
+    expect(m.refresh).toHaveBeenCalledOnce();
+  });
+
+  it("mission introuvable : refusée sans rafraîchir", async () => {
+    m.claimMissionWith.mockRejectedValue(new m.MissionError("NOT_FOUND"));
+    expect(await claimMissionAction({ missionId: "mission" })).toEqual({ ok: false, error: "INVALID" });
+    expect(m.refresh).not.toHaveBeenCalled();
   });
 });
 

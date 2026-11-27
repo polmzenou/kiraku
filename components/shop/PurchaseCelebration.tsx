@@ -90,7 +90,11 @@ export function PurchaseCelebration({ reward, coins, spent, look, name, openHref
     const options: RunOptions = {
       total: s.total,
       lite: s.level === "lite",
-      play: (name, haptic) => play.current(name, haptic),
+      // Passé (appui, Échap, mouvement réduit), le déroulé file sans bruit : sinon tous les sons restants (cloche,
+      // claquements, explosions…) partiraient d'un coup, même dialog fermé
+      play: (name, haptic) => {
+        if (!tl.skipped) play.current(name, haptic);
+      },
       onResult: countBalance,
     };
     const nodes = {

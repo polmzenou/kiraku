@@ -49,6 +49,9 @@ export function ConditionFields({
   legend?: string;
 }) {
   const t = useTranslations("admin.cosmetics");
+  // Noms dans la langue de l'admin (i18n/request.ts les injecte depuis le registre), rangs traduits
+  const tRarity = useTranslations("rarity");
+  const tTier = useTranslations("ranked.tiers");
   const rarities = useRarityDefinitions();
   const [series, setSeries] = useState<{ id: string; title: string }[]>([]);
   const [seriesLabel, setSeriesLabel] = useState(seriesTitle);
@@ -82,7 +85,7 @@ export function ConditionFields({
                   checked={c.rarities.includes(r.key)}
                   onChange={(e) => onChange({ ...c, rarities: e.target.checked ? [...c.rarities, r.key] : c.rarities.filter((k) => k !== r.key) })}
                 />
-                {r.seal} {r.nameFr}
+                {r.seal} {tRarity(r.key)}
               </label>
             ))}
           </div>
@@ -92,7 +95,7 @@ export function ConditionFields({
         <SelectField
           label={t("fields.rarity")}
           value={c.rarity}
-          options={rarities.map((r) => ({ value: r.key, label: `${r.seal} ${r.nameFr}` }))}
+          options={rarities.map((r) => ({ value: r.key, label: `${r.seal} ${tRarity(r.key)}` }))}
           onChange={(rarity) => onChange({ ...c, rarity })}
         />
       )}
@@ -108,7 +111,7 @@ export function ConditionFields({
         </>
       )}
       {c.type === "RANK_TIER" && (
-        <SelectField label={t("fields.tier")} value={c.tier} options={BOARD_TIERS.map((tier) => ({ value: tier, label: tier }))} onChange={(tier) => onChange({ ...c, tier })} />
+        <SelectField label={t("fields.tier")} value={c.tier} options={BOARD_TIERS.map((tier) => ({ value: tier, label: tTier(tier) }))} onChange={(tier) => onChange({ ...c, tier })} />
       )}
       {c.type === "SERIES_COMPLETE" && (
         <Field label={t("fields.series")} hint={seriesLabel ? t("hints.seriesChosen", { title: seriesLabel }) : t("hints.series")}>
@@ -121,7 +124,9 @@ export function ConditionFields({
                 placeholder={t("seriesPlaceholder")}
                 onChange={(e) => {
                   const q = e.target.value.trim();
-                  if (q.length >= 2) void adminSearchSeriesAction(q).then(setSeries);
+                  // Saisie effacée : les résultats de l'ancienne recherche ne restent pas proposés
+                  if (q.length < 2) setSeries([]);
+                  else void adminSearchSeriesAction(q).then(setSeries, () => setSeries([]));
                 }}
                 className={inputClass}
               />

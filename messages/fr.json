@@ -2441,7 +2441,17 @@
       "refereeClaimed": "filleul payé",
       "revoke": "Révoquer",
       "revokeConfirm": "Confirmer la révocation",
-      "cancel": "Annuler"
+      "cancel": "Annuler",
+      "purchaseStatus": {
+        "PENDING": "en attente",
+        "PAID": "payé",
+        "FAILED": "échoué",
+        "REFUNDED": "remboursé"
+      },
+      "purchaseCurrency": {
+        "ZENI": "Zeni",
+        "EUR": "€"
+      }
     },
     "referralV2": {
       "tabs": {
@@ -3697,7 +3707,8 @@
         "NOT_ELIGIBLE": "Ce joueur ne peut pas recevoir de lot (banni ou compte en suppression).",
         "NOT_FOUND": "Envoi introuvable.",
         "DONE": "Cet envoi est déjà terminé.",
-        "UNKNOWN_REF": "Booster ou carte introuvable."
+        "UNKNOWN_REF": "Booster ou carte introuvable.",
+        "unexpected": "Une erreur est survenue : recharge la page pour voir ce qui a été envoyé."
       },
       "reasonHint": "Interne : visible seulement dans le journal admin.",
       "message": "Message au joueur (facultatif)",
@@ -9080,7 +9091,8 @@
         "GUEST": "Inscris-toi pour mettre un succès en avant.",
         "UNAVAILABLE": "Ton compte ne peut pas faire ça pour le moment.",
         "LOCKED": "Ce succès n'est pas débloqué.",
-        "RATE_LIMITED": "Doucement ! Réessaie dans un instant."
+        "RATE_LIMITED": "Doucement ! Réessaie dans un instant.",
+        "unexpected": "Une erreur est survenue. Réessaie."
       }
     },
     "items": {

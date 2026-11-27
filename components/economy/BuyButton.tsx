@@ -13,6 +13,12 @@ import { Button } from "../ui/Button";
 import { RewardText } from "./RewardText";
 
 /**
+ * « Confirmer » prend la place exacte d'« Acheter » : le second clic d'un double-clic (ou d'un double appui au
+ * téléphone) tomberait dessus et achèterait sans confirmation. Un appui aussi proche de l'armement est ignoré.
+ */
+const ARM_GUARD_MS = 400;
+
+/**
  * Achat en Zeni en deux temps : un premier appui affiche le prix à confirmer (et ouvre l'éventail de la
  * carte, l'équivalent tactile du survol), le second achète. Le prix vu est envoyé au serveur, qui
  * refuse (STALE) s'il a changé entre-temps. La célébration est jouée par ShopStage, au-dessus de la
@@ -49,6 +55,8 @@ export function BuyButton({
   const [reward, setReward] = useState<RewardSummary | null>(null);
   const [error, setError] = useState<EconomyActionError | "unexpected" | null>(null);
   const root = useRef<HTMLDivElement>(null);
+  // Instant où « Acheter » a été pressé (horloge de performance.now)
+  const armedAt = useRef(0);
 
   const soldOut = remaining === 0;
   const blocked = soldOut || !affordable;
@@ -64,6 +72,7 @@ export function BuyButton({
   };
 
   const buy = () => {
+    if (performance.now() - armedAt.current < ARM_GUARD_MS) return;
     // Le contexte audio doit naître pendant le geste (Safari) ; le son est joué au sceau
     if (fx.enabled) primeAudio();
     startTransition(async () => {
@@ -134,6 +143,7 @@ export function BuyButton({
           variant="primary"
           size={size}
           onClick={() => {
+            armedAt.current = performance.now();
             setReward(null);
             setConfirming(true);
             // La scène est chargée pendant que le joueur confirme

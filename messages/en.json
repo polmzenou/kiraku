@@ -2441,7 +2441,17 @@
       "refereeClaimed": "referral paid",
       "revoke": "Revoke",
       "revokeConfirm": "Confirm revocation",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "purchaseStatus": {
+        "PENDING": "pending",
+        "PAID": "paid",
+        "FAILED": "failed",
+        "REFUNDED": "refunded"
+      },
+      "purchaseCurrency": {
+        "ZENI": "Zeni",
+        "EUR": "€"
+      }
     },
     "referralV2": {
       "tabs": {
@@ -3697,7 +3707,8 @@
         "NOT_ELIGIBLE": "This player cannot receive a lot (banned or account being deleted).",
         "NOT_FOUND": "Send not found.",
         "DONE": "This send is already finished.",
-        "UNKNOWN_REF": "Booster or card not found."
+        "UNKNOWN_REF": "Booster or card not found.",
+        "unexpected": "Something went wrong: reload the page to see what was sent."
       },
       "reasonHint": "Internal: only shown in the admin log.",
       "message": "Message to the player (optional)",
@@ -9080,7 +9091,8 @@
         "GUEST": "Sign up to feature an achievement.",
         "UNAVAILABLE": "Your account can't do that right now.",
         "LOCKED": "This achievement isn't unlocked.",
-        "RATE_LIMITED": "Easy! Try again in a moment."
+        "RATE_LIMITED": "Easy! Try again in a moment.",
+        "unexpected": "Something went wrong. Try again."
       }
     },
     "items": {

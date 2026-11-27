@@ -42,16 +42,21 @@ export function AchievementGrid({ sections, featured, canFeature }: { sections: 
   const t = useTranslations("achievements.grid");
   const [filter, setFilter] = useState<Filter>("all");
   const [current, setCurrent] = useState(featured);
-  const [error, setError] = useState<FeatureAchievementError | null>(null);
+  const [error, setError] = useState<FeatureAchievementError | "unexpected" | null>(null);
   const [pending, startTransition] = useTransition();
 
   const toggle = (key: string) => {
     const next = current === key ? null : key;
     setError(null);
     startTransition(async () => {
-      const res = await featureAchievementAction({ key: next });
-      if (res.ok) setCurrent(next);
-      else setError(res.error);
+      try {
+        const res = await featureAchievementAction({ key: next });
+        if (res.ok) setCurrent(next);
+        else setError(res.error);
+      } catch {
+        // Réseau coupé ou erreur serveur : un message, pas l'écran d'erreur à la place de la grille
+        setError("unexpected");
+      }
     });
   };
 
