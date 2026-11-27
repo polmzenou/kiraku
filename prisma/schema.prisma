@@ -2317,6 +2317,8 @@ enum CoinFlipStatus {
 // L'exemplaire misé passe en CASINO (séquestre) tant que la table est ouverte. La graine est tirée à
 // l'ouverture et seule son empreinte est publique jusqu'au lancer (lib/casino/fairness.ts).
 // Les ids d'exemplaires n'ont pas de clé étrangère (comme Gift.userCardId) : l'historique survit au recyclage.
+// Dans la migration : une seule table OPEN par exemplaire misé (index unique partiel CoinFlip_open_stake_key) et
+// CHECK sur la forme de la ligne selon le statut, le gagnant, la graine et le fait de ne pas jouer contre soi.
 model CoinFlip {
   id                 String         @id @default(cuid())
   status             CoinFlipStatus @default(OPEN)

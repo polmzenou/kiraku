@@ -4,7 +4,8 @@ import { PrismaClient } from "@/generated/prisma/client";
 import { env, isProduction } from "./env";
 import { createPgPool } from "./pg-adapter";
 
-// Un seul client par processus ; en dev, survit au rechargement à chaud. On garde aussi la classe
+// Un client par environnement de Next (pages, routes d'API : deux par processus, voir server/pg-adapter.ts) ;
+// en dev, survit au rechargement à chaud. On garde aussi la classe
 // qui l'a créé : après un `prisma generate` (nouveau modèle), la classe change et le client est
 // recréé, sinon l'ancien n'aurait pas les nouveaux délégués (ex. prisma.adminLog undefined).
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient; prismaClass?: typeof PrismaClient };

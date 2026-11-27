@@ -51,10 +51,12 @@ export function pgConfig(connectionString: string): { connectionString: string; 
   return { connectionString: url.toString(), ssl: pgSsl(url.hostname) };
 }
 
-// La base tourne sur la même machine que l'app (VPS) et ne sert qu'elle : 15 connexions par processus
-// (garder instances pm2 × 15 sous max_connections, 100 par défaut), gardées 5 min pour ne pas relancer
-// un processus Postgres à chaque creux. Sans délai de connexion, une requête attendrait indéfiniment
-// quand le pool sature.
+// La base tourne sur la même machine que l'app (VPS) et ne sert qu'elle : 15 connexions par pool, gardées
+// 5 min pour ne pas relancer un processus Postgres à chaque creux. Next compile les pages (Server Actions
+// comprises) et les routes d'API (crons compris) dans deux environnements séparés, chacun avec sa copie de
+// server/db.ts : deux pools par processus, soit 30 connexions au plus, 60 pendant une bascule (secours sur
+// 3001), à garder sous max_connections (100 par défaut). Les crons ne prennent donc pas les connexions des
+// pages. Sans délai de connexion, une requête attendrait indéfiniment quand le pool sature.
 const POOL_OPTIONS = { max: 15, idleTimeoutMillis: 300_000, connectionTimeoutMillis: 10_000 } satisfies pg.PoolConfig;
 // Garde-fous de l'app seulement (les scripts d'import peuvent durer) : une requête folle ou une
 // transaction oubliée ne tient plus une connexion indéfiniment. Au-dessus de la plus longue transaction
