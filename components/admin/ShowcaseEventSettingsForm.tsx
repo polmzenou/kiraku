@@ -7,18 +7,19 @@ import { updateShowcaseEventSettings } from "@/server/actions/admin-settings";
 import { Field, inputClass, NumberField, TextField, toLocalInput, Toggle } from "./fields";
 import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
 
-type NumberKey = "event.showcase.minCards" | "event.showcase.pageSize";
+type NumberKey = "event.showcase.minCards" | "event.showcase.pageSize" | "event.showcase.voteMinAccountAgeHours";
 type DateKey = "event.showcase.startsAt" | "event.showcase.endsAt";
 
 const LIMITS: Record<NumberKey, [number, number]> = {
   "event.showcase.minCards": [1, 20],
   "event.showcase.pageSize": [4, 30],
+  "event.showcase.voteMinAccountAgeHours": [0, 24 * 365],
 };
 
 type Short<K> = K extends `event.showcase.${infer S}` ? S : never;
 const short = <K extends keyof ShowcaseEventSettings>(key: K) => key.slice("event.showcase.".length) as Short<K>;
 
-/** Réglages de l'event vitrines : visibilité, édition, fenêtre, minimum de cartes et taille des pages. */
+/** Réglages de l'event vitrines : visibilité, édition, fenêtre, minimum de cartes, taille des pages, ancienneté pour voter. */
 export function ShowcaseEventSettingsForm({ initial }: { initial: ShowcaseEventSettings }) {
   const t = useTranslations("admin.showcaseEvent");
   const { draft, base, setDraft, saved } = useSettingsDraft(initial);
@@ -79,6 +80,7 @@ export function ShowcaseEventSettingsForm({ initial }: { initial: ShowcaseEventS
         {!valid && <p role="alert" className="text-sm font-bold text-shu">{t("invalid")}</p>}
         {num("event.showcase.minCards")}
         {num("event.showcase.pageSize")}
+        {num("event.showcase.voteMinAccountAgeHours")}
       </fieldset>
       <SettingsSaveBar valid={valid} changedLabels={changed.map(label)} base={base} draft={draft} saved={saved} save={updateShowcaseEventSettings} />
     </form>

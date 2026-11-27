@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { seriesTitle } from "@/lib/catalog/display";
 import type { Rarity } from "@/lib/catalog/rarity";
 import type { ShowcaseCard } from "@/lib/collection/view";
@@ -22,8 +23,11 @@ export type ShowcaseSummary = {
   count: number;
 };
 
-/** Vitrines d'un joueur, dans leur ordre (la première est à l'honneur). */
-export async function listShowcases(ownerId: string): Promise<ShowcaseSummary[]> {
+/**
+ * Vitrines d'un joueur, dans leur ordre (la première est à l'honneur). Une fois par requête : la page d'une vitrine
+ * les lit pour ses métadonnées puis pour son rendu.
+ */
+export const listShowcases = cache(async (ownerId: string): Promise<ShowcaseSummary[]> => {
   const rows = await prisma.showcase.findMany({
     where: { userId: ownerId },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -39,7 +43,7 @@ export async function listShowcases(ownerId: string): Promise<ShowcaseSummary[]>
     },
   });
   return rows.map((r) => ({ id: r.id, name: r.name, layout: storedLayout(r.layout), theme: r.theme, sortOrder: r.sortOrder, count: r.items.length }));
-}
+});
 
 /** Cartes d'une vitrine, case par case (null = vide), sur la capacité de sa disposition. */
 export async function getShowcaseCards(showcaseId: string, ownerId: string, layout: ShowcaseLayoutId, locale: string): Promise<(ShowcaseCard | null)[]> {
@@ -100,20 +104,4 @@ export async function getShowcaseCards(showcaseId: string, ownerId: string, layo
     };
   }
   return result;
-}
-
-export type ShowcaseView = ShowcaseSummary & { cards: (ShowcaseCard | null)[] };
-
-/** Une vitrine et ses cartes ; null si elle n'existe pas ou n'est pas à ce joueur. */
-export async function getShowcaseView(showcaseId: string, ownerId: string, locale: string): Promise<ShowcaseView | null> {
-  const summary = (await listShowcases(ownerId)).find((s) => s.id === showcaseId);
-  if (!summary) return null;
-  return { ...summary, cards: await getShowcaseCards(summary.id, ownerId, summary.layout, locale) };
-}
-
-/** Vitrine à l'honneur (la première) et ses cartes ; null si le joueur n'en a aucune. */
-export async function getFeaturedShowcase(ownerId: string, locale: string): Promise<ShowcaseView | null> {
-  const [first] = await listShowcases(ownerId);
-  if (!first) return null;
-  return { ...first, cards: await getShowcaseCards(first.id, ownerId, first.layout, locale) };
 }

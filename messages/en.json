@@ -4404,14 +4404,16 @@
         "startsAt": "Start",
         "endsAt": "End",
         "minCards": "Minimum cards",
-        "pageSize": "Showcases per page"
+        "pageSize": "Showcases per page",
+        "voteMinAccountAgeHours": "Minimum account age to vote (h)"
       },
       "hints": {
         "enabled": "Off: /event returns 404, and the event appears neither in the navigation nor on the home page.",
         "edition": "Event identifier (lowercase letters, digits, hyphens). Changing it starts a new event: entries and votes start from zero.",
         "date": "In your browser's local time.",
         "minCards": "Number of cards a showcase must hold to be entered.",
-        "pageSize": "Number of showcases per page on /event."
+        "pageSize": "Number of showcases per page on /event.",
+        "voteMinAccountAgeHours": "Hours since sign-up before a player can vote (anti multi-accounts, like the Market). 0: right after signing up."
       },
       "entriesTitle": "Entries · {edition}",
       "entriesHint": "Live votes, visible to admins only. Removing an entry also deletes its votes.",
@@ -5668,6 +5670,7 @@
       "GUEST": "Create your account to take part and vote.",
       "UNAVAILABLE": "This isn't possible right now.",
       "CLOSED": "The event is not open.",
+      "TOO_NEW": "Your account is too new to vote.",
       "RATE_LIMITED": "Too many attempts: try again in a moment.",
       "NOT_FOUND": "This showcase is no longer in the event.",
       "TOO_FEW_CARDS": "This showcase doesn't have enough cards.",

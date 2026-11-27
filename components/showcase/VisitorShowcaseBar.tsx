@@ -1,15 +1,15 @@
 import { getFormatter, getTranslations } from "next-intl/server";
-import { ownedCardIds } from "@/server/collection/owned";
 import { WishMissingButton } from "./WishMissingButton";
 
 /**
  * Sous la vitrine d'un autre joueur, pour un visiteur connecté : la part de ces cartes déjà dans sa
- * collection, et l'ajout des autres à sa liste de souhaits.
+ * collection, et l'ajout des autres à sa liste de souhaits. `owned` : celles qu'il possède, déjà lues par la page
+ * pour les pastilles « Acquise ».
  */
-export async function VisitorShowcaseBar({ viewerId, cardIds }: { viewerId: string | null; cardIds: readonly string[] }) {
+export async function VisitorShowcaseBar({ viewerId, cardIds, owned }: { viewerId: string | null; cardIds: readonly string[]; owned: readonly string[] }) {
   if (!viewerId || cardIds.length === 0) return null;
-  const [owned, t, format] = await Promise.all([ownedCardIds(viewerId, cardIds), getTranslations("showcase"), getFormatter()]);
-  const have = new Set(owned);
+  const [t, format] = await Promise.all([getTranslations("showcase"), getFormatter()]);
+  const have = new Set(owned.filter((id) => cardIds.includes(id)));
   const missing = cardIds.filter((id) => !have.has(id));
   const share = format.number(have.size / cardIds.length, { style: "percent", maximumFractionDigits: 0 });
   return (

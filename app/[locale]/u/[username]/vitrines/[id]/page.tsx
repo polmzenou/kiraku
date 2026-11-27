@@ -143,7 +143,7 @@ export default async function ShowcasePage({ params, searchParams }: PageProps<"
                 isOwner={false}
                 preload
               />
-              <VisitorShowcaseBar viewerId={viewer?.id ?? null} cardIds={cardIds} />
+              <VisitorShowcaseBar viewerId={viewer?.id ?? null} cardIds={cardIds} owned={owned} />
             </>
           ) : (
             <p className="lacquer rounded-card p-4 text-sm text-text-muted">{t("emptyPublic")}</p>

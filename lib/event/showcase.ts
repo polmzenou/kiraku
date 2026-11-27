@@ -1,5 +1,6 @@
 import { z } from "@/lib/zod";
 import { eventGaugePhase, type EventGaugePhase } from "@/lib/home/event-gauge";
+import { accountAgeMs } from "@/lib/market/rules";
 import { layoutCapacity, MAX_SHOWCASE_CARDS, type ShowcaseLayoutId } from "@/lib/showcase/layouts";
 
 // Event vitrines (concours avec votes) : règles pures, sans base ni horloge cachée. Le serveur s'en sert
@@ -56,11 +57,12 @@ export function entrySlots<T>(cards: readonly EntryCard[], layout: ShowcaseLayou
 
 // --- Votes ---
 
-export type VoteError = "CLOSED" | "NOT_FOUND" | "OWN_ENTRY";
+export type VoteError = "CLOSED" | "TOO_NEW" | "NOT_FOUND" | "OWN_ENTRY";
 
 /**
- * Le joueur peut-il voter pour cette inscription ? Event allumé et en cours, inscription de l'édition en
- * cours, et jamais sa propre vitrine.
+ * Le joueur peut-il voter pour cette inscription ? Event allumé et en cours, compte inscrit depuis au moins
+ * `minAccountAgeHours` (anti-multicomptes, compté depuis l'inscription comme au Marché), inscription de l'édition
+ * en cours, et jamais sa propre vitrine.
  */
 export function voteError(input: {
   enabled: boolean;
@@ -68,8 +70,12 @@ export function voteError(input: {
   edition: string;
   entry: { edition: string; userId: string } | null;
   voterId: string;
+  voter: { createdAt: Date; registeredAt: Date | null };
+  minAccountAgeHours: number;
+  now: Date;
 }): VoteError | null {
   if (!input.enabled || input.phase !== "live") return "CLOSED";
+  if (accountAgeMs(input.voter, input.now) < input.minAccountAgeHours * 3_600_000) return "TOO_NEW";
   if (!input.entry || input.entry.edition !== input.edition) return "NOT_FOUND";
   if (input.entry.userId === input.voterId) return "OWN_ENTRY";
   return null;

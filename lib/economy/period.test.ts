@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isoWeekKey, localMidnight, periodWindow } from "./period";
+import { endOfLocalDay, isoWeekKey, localMidnight, periodWindow } from "./period";
 
 const PARIS = "Europe/Paris";
 
@@ -44,6 +44,14 @@ describe("périodes du jeu", () => {
     expect(isoWeekKey({ year: 2027, month: 1, day: 3 })).toBe("2026-W53");
     expect(isoWeekKey({ year: 2027, month: 1, day: 4 })).toBe("2027-W01");
     expect(isoWeekKey({ year: 2024, month: 12, day: 30 })).toBe("2025-W01");
+  });
+
+  it("la fin d'un jour donné suit l'heure d'été et d'hiver", () => {
+    expect(endOfLocalDay("2026-12-31", PARIS)?.toISOString()).toBe("2026-12-31T23:00:00.000Z");
+    expect(endOfLocalDay("2026-07-31", PARIS)?.toISOString()).toBe("2026-07-31T22:00:00.000Z");
+    // Jour du passage à l'heure d'hiver : il finit à minuit, heure d'hiver
+    expect(endOfLocalDay("2026-10-25", PARIS)?.toISOString()).toBe("2026-10-25T23:00:00.000Z");
+    expect(endOfLocalDay("31/12/2026", PARIS)).toBeNull();
   });
 
   it("minuit local dans un autre fuseau", () => {

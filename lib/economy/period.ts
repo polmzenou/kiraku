@@ -37,6 +37,16 @@ export function localMidnight(d: YMD, timeZone: string): Date {
   return new Date(at);
 }
 
+/**
+ * Instant UTC où se termine le jour « AAAA-MM-JJ » dans le fuseau : minuit du lendemain, heure locale (23 h ou
+ * 22 h UTC à Paris selon la saison). null si le texte n'est pas une date.
+ */
+export function endOfLocalDay(day: string, timeZone: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
+  if (!match) return null;
+  return localMidnight(addDays({ year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) }, 1), timeZone);
+}
+
 export function addDays(d: YMD, n: number): YMD {
   const t = new Date(Date.UTC(d.year, d.month - 1, d.day) + n * DAY);
   return { year: t.getUTCFullYear(), month: t.getUTCMonth() + 1, day: t.getUTCDate() };

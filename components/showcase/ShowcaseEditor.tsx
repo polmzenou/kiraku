@@ -109,8 +109,11 @@ export function ShowcaseEditor({
   const shownIds = new Set(cards.flatMap((c) => (c ? [c.cardId] : [])));
   const displayName = name ?? untitled;
 
-  /** Enregistre un changement : état affiché tout de suite, restauré si le serveur refuse. */
-  function persist(run: () => Promise<{ ok: true } | { ok: false; error: ShowcaseActionError }>, rollback: () => void, after?: () => void) {
+  /**
+   * Enregistre un changement : état affiché tout de suite, restauré si le serveur refuse. Les actions rafraîchissent
+   * déjà la page (refresh côté serveur : onglets, nombre de cartes) : pas de second rendu demandé ici.
+   */
+  function persist(run: () => Promise<{ ok: true } | { ok: false; error: ShowcaseActionError }>, rollback: () => void) {
     setStatus("saving");
     setError(null);
     setNotice(null);
@@ -123,7 +126,6 @@ export function ShowcaseEditor({
         return;
       }
       setStatus("saved");
-      after?.();
     });
   }
 
@@ -209,7 +211,6 @@ export function ShowcaseEditor({
         setLayout(saved.current.layout);
         setCards(saved.current.cards);
       },
-      () => router.refresh(),
     );
   };
 
@@ -227,7 +228,6 @@ export function ShowcaseEditor({
         return res;
       },
       () => setTheme(saved.current.theme),
-      () => router.refresh(),
     );
   };
 
@@ -242,7 +242,6 @@ export function ShowcaseEditor({
         return res;
       },
       () => setName(saved.current.name),
-      () => router.refresh(),
     );
   };
 

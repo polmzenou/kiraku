@@ -28,6 +28,7 @@ export type ShowcaseEventActionError =
   | "GUEST"
   | "UNAVAILABLE"
   | "CLOSED"
+  | "TOO_NEW"
   | "RATE_LIMITED"
   | "NOT_FOUND"
   | "TOO_FEW_CARDS"
@@ -109,7 +110,14 @@ export async function voteShowcaseEntryAction(input: unknown): Promise<ShowcaseE
   const g = await guard(input, entryInput, "vote");
   if (!g.ok) return { ok: false, error: g.error };
   try {
-    await voteShowcaseEntryWith(prisma, { voterId: g.userId, edition: g.state.edition, entryId: g.data.entryId, enabled: g.state.enabled, phase: g.state.phase });
+    await voteShowcaseEntryWith(prisma, {
+      voterId: g.userId,
+      edition: g.state.edition,
+      entryId: g.data.entryId,
+      enabled: g.state.enabled,
+      phase: g.state.phase,
+      minAccountAgeHours: await getSetting("event.showcase.voteMinAccountAgeHours"),
+    });
   } catch (e) {
     return failure(e);
   }

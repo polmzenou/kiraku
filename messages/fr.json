@@ -4404,14 +4404,16 @@
         "startsAt": "Début",
         "endsAt": "Fin",
         "minCards": "Cartes minimum",
-        "pageSize": "Vitrines par page"
+        "pageSize": "Vitrines par page",
+        "voteMinAccountAgeHours": "Ancienneté minimale pour voter (h)"
       },
       "hints": {
         "enabled": "Désactivé : /event répond 404, et l'event n'apparaît ni dans la navigation ni sur l'accueil.",
         "edition": "Identifiant de l'event (minuscules, chiffres, tirets). Le changer démarre un nouvel event : inscriptions et votes repartent de zéro.",
         "date": "Dans l'heure locale de ton navigateur.",
         "minCards": "Nombre de cartes qu'une vitrine doit contenir pour être inscrite.",
-        "pageSize": "Nombre de vitrines par page sur /event."
+        "pageSize": "Nombre de vitrines par page sur /event.",
+        "voteMinAccountAgeHours": "Heures depuis l'inscription avant de pouvoir voter (anti-multicomptes, comme le Marché). 0 : dès l'inscription."
       },
       "entriesTitle": "Inscriptions · {edition}",
       "entriesHint": "Votes en direct, visibles par les admins seulement. Retirer une inscription efface aussi ses votes.",
@@ -5668,6 +5670,7 @@
       "GUEST": "Crée ton compte pour participer et voter.",
       "UNAVAILABLE": "Action impossible pour le moment.",
       "CLOSED": "L'event n'est pas ouvert.",
+      "TOO_NEW": "Ton compte est trop récent pour voter.",
       "RATE_LIMITED": "Trop de tentatives : réessaie dans un instant.",
       "NOT_FOUND": "Cette vitrine n'est plus dans l'event.",
       "TOO_FEW_CARDS": "Cette vitrine n'a pas assez de cartes.",

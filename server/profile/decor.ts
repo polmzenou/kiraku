@@ -1,7 +1,6 @@
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
-import { decorFromRelations, NO_DECOR, type PlayerDecor } from "@/lib/profile/decor";
-import { prisma } from "../db";
+import { decorFromRelations, type PlayerDecor } from "@/lib/profile/decor";
 
 // Décor d'un joueur (cadre et couleur de pseudo) à joindre à toute requête qui l'affiche.
 // Le passage en PlayerDecor se fait avec decorFromRelations / decorFromColumns (lib/profile/decor.ts).
@@ -20,12 +19,6 @@ export const decorSelect = {
 export const decorColumns = Prisma.sql`(SELECT dc."frameStyle" FROM "Cosmetic" dc WHERE dc.id = u."frameId" AND dc.active) AS "frameStyle",
   (SELECT dc."nameColor" FROM "Cosmetic" dc WHERE dc.id = u."nameColorId" AND dc.active) AS "nameColor",
   u."prestige" AS "prestige"`;
-
-/** Décor d'un seul joueur. */
-export async function getPlayerDecor(userId: string): Promise<PlayerDecor> {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: decorSelect });
-  return user ? decorFromRelations(user) : NO_DECOR;
-}
 
 export type DecorColumns = { frameStyle: string | null; nameColor: string | null; prestige: number };
 

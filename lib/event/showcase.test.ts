@@ -39,9 +39,27 @@ describe("photo de la vitrine engagée", () => {
 });
 
 describe("vote", () => {
-  const base = { enabled: true, phase: "live" as const, edition: "vitrines-1", entry: { edition: "vitrines-1", userId: "auteur" }, voterId: "votant" };
+  const now = new Date("2026-12-02T12:00:00Z");
+  const base = {
+    enabled: true,
+    phase: "live" as const,
+    edition: "vitrines-1",
+    entry: { edition: "vitrines-1", userId: "auteur" },
+    voterId: "votant",
+    voter: { createdAt: new Date("2026-12-02T11:00:00Z"), registeredAt: null },
+    minAccountAgeHours: 0,
+    now,
+  };
   it("autorise un vote pour la vitrine d'un autre pendant l'event", () => {
     expect(voteError(base)).toBeNull();
+  });
+  it("refuse un compte inscrit depuis moins que l'ancienneté réglée, comptée depuis l'inscription", () => {
+    expect(voteError({ ...base, minAccountAgeHours: 48 })).toBe("TOO_NEW");
+    // Invité créé il y a longtemps, inscrit il y a une heure : encore trop récent
+    expect(voteError({ ...base, minAccountAgeHours: 48, voter: { createdAt: new Date("2026-10-01T00:00:00Z"), registeredAt: new Date("2026-12-02T11:00:00Z") } })).toBe("TOO_NEW");
+    expect(voteError({ ...base, minAccountAgeHours: 48, voter: { createdAt: new Date("2026-11-30T12:00:00Z"), registeredAt: null } })).toBeNull();
+    // Hors période, l'event fermé passe avant
+    expect(voteError({ ...base, minAccountAgeHours: 48, phase: "ended" })).toBe("CLOSED");
   });
   it("refuse sa propre vitrine, une autre édition, et hors de la période", () => {
     expect(voteError({ ...base, voterId: "auteur" })).toBe("OWN_ENTRY");

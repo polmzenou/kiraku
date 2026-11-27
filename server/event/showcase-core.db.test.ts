@@ -27,7 +27,7 @@ describe.skipIf(!url)("event vitrines (base réelle)", () => {
   const seriesId = `test-series-${tag}`;
   const cards = Array.from({ length: 6 }, (_, i) => `test-card-${tag}-${i}`);
   const users: string[] = [];
-  const live = { enabled: true, phase: "live" as const };
+  const live = { enabled: true, phase: "live" as const, minAccountAgeHours: 0 };
 
   async function player(isGuest = false) {
     const user = await prisma.user.create({ data: { username: `test-${randomBytes(4).toString("hex")}`, isGuest } });
@@ -118,7 +118,9 @@ describe.skipIf(!url)("event vitrines (base réelle)", () => {
     const entryB = (await enter(b.userId, b.showcaseId)).id;
 
     expect(await code(voteShowcaseEntryWith(prisma, { voterId: a.userId, edition, entryId: entryA, ...live }))).toBe("OWN_ENTRY");
-    expect(await code(voteShowcaseEntryWith(prisma, { voterId: voter, edition, entryId: entryA, enabled: true, phase: "ended" }))).toBe("CLOSED");
+    expect(await code(voteShowcaseEntryWith(prisma, { voterId: voter, edition, entryId: entryA, ...live, phase: "ended" }))).toBe("CLOSED");
+    // Compte créé à l'instant : trop récent dès qu'une ancienneté est exigée
+    expect(await code(voteShowcaseEntryWith(prisma, { voterId: voter, edition, entryId: entryA, ...live, minAccountAgeHours: 48 }))).toBe("TOO_NEW");
     expect(await code(voteShowcaseEntryWith(prisma, { voterId: voter, edition: "autre", entryId: entryA, ...live }))).toBe("NOT_FOUND");
 
     await voteShowcaseEntryWith(prisma, { voterId: voter, edition, entryId: entryA, ...live });

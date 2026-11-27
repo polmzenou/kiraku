@@ -308,6 +308,8 @@ export const SETTING_SCHEMAS = {
   "event.showcase.endsAt": z.string().datetime(),
   "event.showcase.minCards": z.number().int().min(1).max(20),
   "event.showcase.pageSize": z.number().int().min(4).max(30),
+  // Ancienneté minimale (heures depuis l'inscription) pour voter : barrière anti-multicomptes, comme le Marché et les cadeaux
+  "event.showcase.voteMinAccountAgeHours": z.number().int().min(0).max(24 * 365),
   // Expéditions (/expedition, étape 14) : cachées tant que l'admin ne les allume pas (aperçu pour l'admin).
   // Offres par jour et par joueur, attente après un abandon, bonus de chance de chaque carte selon son écart
   // de palier avec la rareté exigée, gains du triomphe et consolation d'un échec (en % des gains de réussite)
@@ -790,6 +792,7 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "event.showcase.endsAt": "2026-12-08T18:00:00.000Z", // 19h à Paris
   "event.showcase.minCards": 1,
   "event.showcase.pageSize": 10,
+  "event.showcase.voteMinAccountAgeHours": 0, // 0 : tout compte inscrit vote dès son inscription
   "expedition.enabled": false, // caché tant que l'admin ne l'allume pas
   "expedition.offersPerDay": 3,
   "expedition.abandonCooldownHours": 3,

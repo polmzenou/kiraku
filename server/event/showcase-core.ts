@@ -14,6 +14,7 @@ export type ShowcaseEventErrorCode =
   | "GUEST"
   | "UNAVAILABLE"
   | "CLOSED"
+  | "TOO_NEW"
   | "NOT_FOUND"
   | "TOO_FEW_CARDS"
   | "ALREADY_ENTERED"
@@ -28,13 +29,16 @@ export class ShowcaseEventError extends Error {
 type Tx = Prisma.TransactionClient;
 type Db = PrismaClient;
 
-/** Verrouille le joueur et vérifie qu'il peut jouer : inscrit, non banni, compte non gelé. */
-async function lockPlayer(tx: Tx, userId: string): Promise<void> {
-  const [user] = await tx.$queryRaw<{ isGuest: boolean; bannedAt: Date | null; deletionRequestedAt: Date | null; anonymizedAt: Date | null }[]>`
-    SELECT "isGuest", "bannedAt", "deletionRequestedAt", "anonymizedAt" FROM "User" WHERE id = ${userId} FOR UPDATE`;
+type LockedPlayer = { createdAt: Date; registeredAt: Date | null };
+
+/** Verrouille le joueur et vérifie qu'il peut jouer : inscrit, non banni, compte non gelé. Renvoie son ancienneté. */
+async function lockPlayer(tx: Tx, userId: string): Promise<LockedPlayer> {
+  const [user] = await tx.$queryRaw<({ isGuest: boolean; bannedAt: Date | null; deletionRequestedAt: Date | null; anonymizedAt: Date | null } & LockedPlayer)[]>`
+    SELECT "isGuest", "bannedAt", "deletionRequestedAt", "anonymizedAt", "createdAt", "registeredAt" FROM "User" WHERE id = ${userId} FOR UPDATE`;
   if (!user) throw new ShowcaseEventError("NO_USER");
   if (user.isGuest) throw new ShowcaseEventError("GUEST");
   if (user.bannedAt || isFrozen(user)) throw new ShowcaseEventError("UNAVAILABLE");
+  return { createdAt: user.createdAt, registeredAt: user.registeredAt };
 }
 
 const isKnown = (e: unknown, code: string) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === code;
@@ -102,20 +106,30 @@ export async function withdrawShowcaseEntryWith(db: Db, input: { userId: string;
 
 /**
  * Vote pour une inscription (un seul vote par joueur et par édition, remplacé s'il change d'avis). Jamais
- * pour sa propre vitrine, ni pour celle d'un compte banni ou gelé.
+ * pour sa propre vitrine, ni pour celle d'un compte banni ou gelé, ni depuis un compte inscrit depuis moins de
+ * `minAccountAgeHours` heures.
  */
 export async function voteShowcaseEntryWith(
   db: Db,
-  input: { voterId: string; edition: string; entryId: string; enabled: boolean; phase: ShowcaseEventPhase | null },
+  input: { voterId: string; edition: string; entryId: string; enabled: boolean; phase: ShowcaseEventPhase | null; minAccountAgeHours: number; now?: Date },
 ): Promise<void> {
   try {
     await db.$transaction(async (tx) => {
-      await lockPlayer(tx, input.voterId);
+      const voter = await lockPlayer(tx, input.voterId);
       const entry = await tx.showcaseEventEntry.findUnique({
         where: { id: input.entryId },
         select: { edition: true, userId: true, user: { select: { bannedAt: true, deletionRequestedAt: true, anonymizedAt: true } } },
       });
-      const error = voteError({ enabled: input.enabled, phase: input.phase, edition: input.edition, entry, voterId: input.voterId });
+      const error = voteError({
+        enabled: input.enabled,
+        phase: input.phase,
+        edition: input.edition,
+        entry,
+        voterId: input.voterId,
+        voter,
+        minAccountAgeHours: input.minAccountAgeHours,
+        now: input.now ?? new Date(),
+      });
       if (error) throw new ShowcaseEventError(error);
       if (entry!.user.bannedAt || isFrozen(entry!.user)) throw new ShowcaseEventError("NOT_FOUND");
       const key = { edition_voterId: { edition: input.edition, voterId: input.voterId } };

@@ -51,7 +51,7 @@ beforeEach(() => {
   mocks.user.mockResolvedValue(player);
   mocks.state.mockResolvedValue(live);
   mocks.limit.mockResolvedValue({ success: true });
-  mocks.setting.mockResolvedValue({});
+  mocks.setting.mockImplementation(async (key: string) => (key === "event.showcase.voteMinAccountAgeHours" ? 48 : {}));
   mocks.admin.mockResolvedValue({ id: "admin" });
 });
 
@@ -95,15 +95,17 @@ describe("actions de l'event vitrines", () => {
     expect(await enterShowcaseEventAction({ showcaseId: "s1" })).toEqual({ ok: true });
     expect(mocks.enter).toHaveBeenCalledWith({}, { userId: "joueur", showcaseId: "s1", edition: "vitrines-1", minCards: 2, themes: {} });
     expect(await voteShowcaseEntryAction({ entryId: "e1" })).toEqual({ ok: true });
-    expect(mocks.vote).toHaveBeenCalledWith({}, { voterId: "joueur", edition: "vitrines-1", entryId: "e1", enabled: true, phase: "live" });
+    expect(mocks.vote).toHaveBeenCalledWith({}, { voterId: "joueur", edition: "vitrines-1", entryId: "e1", enabled: true, phase: "live", minAccountAgeHours: 48 });
     expect(await clearShowcaseVoteAction({})).toEqual({ ok: true });
     expect(mocks.clear).toHaveBeenCalledWith({}, { voterId: "joueur", edition: "vitrines-1" });
     expect(mocks.refresh).toHaveBeenCalledTimes(3);
   });
 
-  it("relaie les refus du cœur (vote pour soi, inscription en double)", async () => {
+  it("relaie les refus du cœur (vote pour soi, compte trop récent, inscription en double)", async () => {
     mocks.vote.mockRejectedValueOnce(new ShowcaseEventError("OWN_ENTRY"));
     expect(await voteShowcaseEntryAction({ entryId: "e1" })).toEqual({ ok: false, error: "OWN_ENTRY" });
+    mocks.vote.mockRejectedValueOnce(new ShowcaseEventError("TOO_NEW"));
+    expect(await voteShowcaseEntryAction({ entryId: "e1" })).toEqual({ ok: false, error: "TOO_NEW" });
     mocks.enter.mockRejectedValueOnce(new ShowcaseEventError("ALREADY_ENTERED"));
     expect(await enterShowcaseEventAction({ showcaseId: "s1" })).toEqual({ ok: false, error: "ALREADY_ENTERED" });
     expect(mocks.refresh).not.toHaveBeenCalled();

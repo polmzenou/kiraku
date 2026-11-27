@@ -10,6 +10,7 @@ export const SHOWCASE_EVENT_SETTING_KEYS = [
   "event.showcase.endsAt",
   "event.showcase.minCards",
   "event.showcase.pageSize",
+  "event.showcase.voteMinAccountAgeHours",
 ] as const satisfies readonly SettingKey[];
 
 export type ShowcaseEventSettingKey = (typeof SHOWCASE_EVENT_SETTING_KEYS)[number];

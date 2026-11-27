@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import type { Role } from "@/generated/prisma/client";
+import { endOfLocalDay } from "@/lib/economy/period";
 import { careerTier } from "@/lib/ranked/career";
 import {
   conditionAvailable,
@@ -180,18 +181,20 @@ export async function getCosmeticProgress(userId: string, locale: string): Promi
 
 /** Badges obtenus par le joueur (ordre par défaut). */
 export async function getEarnedBadges(user: { id: string; createdAt: Date; discordLinkedAt: Date | null; ambassadorSince: Date | null; role: Role; prestige: number }): Promise<Badge[]> {
-  const [pioneerUntil, sponsorReferrals, recruiterReferrals, installedReferrals, counts] = await Promise.all([
+  const [pioneerUntil, timeZone, sponsorReferrals, recruiterReferrals, installedReferrals, counts] = await Promise.all([
     getSetting("profile.pioneerUntil"),
+    getSetting("game.timeZone"),
     getSetting("profile.sponsorReferrals"),
     getSetting("profile.recruiterReferrals"),
     // Amis installés, comme les paliers du parrainage (v1 qualifiés compris, révoqués et bloqués exclus)
     installedCount(prisma, user.id),
     prestigeCountsOf(user.id),
   ]);
+  // Jusqu'à la fin de la journée indiquée, heure du jeu (heure d'été comprise) : un inscrit du dernier jour reste pionnier
+  const pioneerEnd = pioneerUntil ? endOfLocalDay(pioneerUntil, timeZone) : null;
   return earnedBadges({
     createdAt: user.createdAt,
-    // Fin de la journée indiquée, heure de Paris approchée par UTC+1 : un inscrit du dernier jour reste pionnier
-    pioneerUntil: pioneerUntil ? new Date(`${pioneerUntil}T23:59:59+01:00`) : null,
+    pioneerUntil: pioneerEnd ? new Date(pioneerEnd.getTime() - 1) : null,
     staff: user.role !== "USER",
     ambassador: user.ambassadorSince !== null,
     installedReferrals,
