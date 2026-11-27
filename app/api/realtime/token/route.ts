@@ -13,8 +13,10 @@ const ID = /^[A-Za-z0-9_-]{1,40}$/;
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
-  // Banni (compte, ou réseau : server/anticheat/network-ban.ts) : plus de temps réel
-  if (!user || user.bannedAt) return Response.json({ error: "unauthorized" }, { status: 401 });
+  // Banni (compte, ou réseau : server/anticheat/network-ban.ts), ou session perdue : plus de temps réel. 403 et non
+  // 401 : Ably prend toute autre erreur de authUrl pour une panne passagère et redemande un jeton toutes les 15 s ;
+  // sur un 403 il s'arrête, et RealtimeProvider ne réessaie qu'à intervalles espacés.
+  if (!user || user.bannedAt) return Response.json({ error: "unauthorized" }, { status: 403 });
   if (!(await rateLimit(`realtime-token:${user.id}`, { limit: 30, windowSeconds: 60 })).success) {
     return Response.json({ error: "rate_limited" }, { status: 429 });
   }

@@ -4,10 +4,9 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { subscribePushAction, unsubscribePushAction } from "@/server/actions/push";
 import { Button } from "../ui/Button";
+import { PUSH_SW_URL as SW_URL } from "./PushSessionGuard";
 
 type State = "loading" | "unsupported" | "needsInstall" | "denied" | "off" | "on";
-
-const SW_URL = "/sw.js";
 
 function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> {
   const base64 = (value + "=".repeat((4 - (value.length % 4)) % 4)).replace(/-/g, "+").replace(/_/g, "/");
