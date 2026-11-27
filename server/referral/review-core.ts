@@ -14,10 +14,11 @@ import { installedCount, payDueRewardsWith, type PayoutDeps } from "./payout-cor
 // Décisions de l'équipe sur un parrainage v2 (ADMIN ou DEV, vérifié par l'action) :
 //   - Valider : le blocage est levé, tout ce qui était dû est versé (payDueRewardsWith).
 //   - Révoquer : le parrainage ne compte plus et ne verse plus rien ; rien n'est repris.
-//   - Révoquer et bannir, en une seule transaction : tout ce que le parrainage a versé est repris (Zeni dans la limite
-//     du solde, crédits non ouverts, sachets encore scellés, exemplaires encore possédés, ordinaires et jamais mis aux
-//     enchères, bons inutilisés), ainsi que les paliers du parrain au-dessus de son nouveau compte ; les deux comptes
-//     sont bannis (bans réseau, sauf un compte de l'équipe) ; le journal de l'équipe compare le versé et le repris.
+//   - Révoquer et bannir (aussi après une simple révocation), en une seule transaction : tout ce que le parrainage a
+//     versé est repris (Zeni dans la limite du solde, crédits non ouverts, sachets encore scellés, exemplaires encore
+//     possédés, ordinaires et jamais mis aux enchères, bons inutilisés), ainsi que les paliers du parrain au-dessus de
+//     son nouveau compte ; les deux comptes sont bannis (bans réseau, sauf un compte de l'équipe) ; le journal de
+//     l'équipe compare le versé et le repris.
 // Le parrainage est verrouillé en premier, puis les joueurs, comme pour un versement : une reprise et un versement
 // lancés en même temps passent l'un après l'autre.
 
@@ -31,14 +32,28 @@ export class ReviewError extends Error {
 
 const TX = { maxWait: 10_000, timeout: 60_000 };
 
-type LockedReferral = { id: string; version: number; referrerId: string; refereeId: string; heldAt: Date | null; reviewedAt: Date | null; revokedAt: Date | null };
+type LockedReferral = {
+  id: string;
+  version: number;
+  referrerId: string;
+  refereeId: string;
+  heldAt: Date | null;
+  reviewedAt: Date | null;
+  revokedAt: Date | null;
+  reviewDecision: string | null;
+};
 
-async function lockReferral(tx: Prisma.TransactionClient, referralId: string): Promise<LockedReferral> {
+/**
+ * Parrainage verrouillé. `banUpgrade` : un parrainage seulement révoqué peut encore passer à « Révoquer et bannir »
+ * (l'équipe a trouvé la triche après coup) ; un parrainage déjà banni, jamais.
+ */
+async function lockReferral(tx: Prisma.TransactionClient, referralId: string, banUpgrade = false): Promise<LockedReferral> {
   const [row] = await tx.$queryRaw<LockedReferral[]>`
-    SELECT id, version, "referrerId", "refereeId", "heldAt", "reviewedAt", "revokedAt" FROM "Referral" WHERE id = ${referralId} FOR UPDATE`;
+    SELECT id, version, "referrerId", "refereeId", "heldAt", "reviewedAt", "revokedAt", "reviewDecision"::text AS "reviewDecision"
+    FROM "Referral" WHERE id = ${referralId} FOR UPDATE`;
   if (!row) throw new ReviewError("NOT_FOUND");
   if (row.version !== 2) throw new ReviewError("NOT_V2");
-  if (row.revokedAt) throw new ReviewError("ALREADY_REVOKED");
+  if (row.revokedAt && !(banUpgrade && row.reviewDecision === "REVOKED")) throw new ReviewError("ALREADY_REVOKED");
   return row;
 }
 
@@ -131,16 +146,18 @@ export type RevokePreview = { referrerId: string; refereeId: string; reports: Cl
 
 /**
  * Ce que « Révoquer et bannir » reprendrait maintenant, sans rien écrire ni verrouiller : l'aperçu de la confirmation
- * (la reprise relit tout sous verrou). null : parrainage introuvable, v1 ou déjà révoqué.
+ * (la reprise relit tout sous verrou). null : parrainage introuvable, v1 ou déjà banni (un parrainage seulement révoqué
+ * peut encore l'être).
  */
 export async function previewRevokeWith(db: PrismaClient, referralId: string): Promise<RevokePreview | null> {
   const r = await db.referral.findUnique({
     where: { id: referralId },
     select: { id: true, version: true, referrerId: true, refereeId: true, revokedAt: true, step2At: true, heldAt: true, reviewDecision: true },
   });
-  if (!r || r.version !== 2 || r.revokedAt) return null;
-  // Amis installés du parrain une fois ce parrainage révoqué (même prédicat que installedCount)
-  const counted = r.step2At !== null && (r.heldAt === null || r.reviewDecision === "VALIDATED");
+  if (!r || r.version !== 2 || (r.revokedAt && r.reviewDecision !== "REVOKED")) return null;
+  // Amis installés du parrain une fois ce parrainage révoqué (même prédicat que installedCount ; déjà révoqué, il n'y
+  // compte plus)
+  const counted = r.revokedAt === null && r.step2At !== null && (r.heldAt === null || r.reviewDecision === "VALIDATED");
   const installed = (await installedCount(db, r.referrerId)) - (counted ? 1 : 0);
   const rewards = await clawbackTargets(db, r, installed);
   const byUser = grantsByUser(rewards);
@@ -160,11 +177,12 @@ export async function revokeReferralWith(
   input: { staffId: string; referralId: string; ban: boolean; reason: string; now: Date; sharedIpCap: number; ipv4BanDays?: number },
 ): Promise<RevokeOutcome> {
   const outcome = await db.$transaction(async (tx): Promise<RevokeOutcome> => {
-    const r = await lockReferral(tx, input.referralId);
-    // Révoqué d'abord : le nouveau compte d'amis installés du parrain ne le compte plus
+    const r = await lockReferral(tx, input.referralId, input.ban);
+    // Révoqué d'abord : le nouveau compte d'amis installés du parrain ne le compte plus. Déjà révoqué (« Révoquer », puis
+    // « Révoquer et bannir ») : la date de la révocation reste, la décision devient le bannissement
     await tx.referral.update({
       where: { id: r.id },
-      data: { reviewedAt: input.now, reviewedById: input.staffId, reviewDecision: input.ban ? "BANNED" : "REVOKED", revokedAt: input.now },
+      data: { reviewedAt: input.now, reviewedById: input.staffId, reviewDecision: input.ban ? "BANNED" : "REVOKED", revokedAt: r.revokedAt ?? input.now },
       select: { id: true },
     });
     if (!input.ban) {

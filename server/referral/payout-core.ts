@@ -167,9 +167,10 @@ export async function payDueRewardsWith(db: PrismaClient, referralId: string, de
     db.referralReward.findMany({ where: { referralId: referral.id }, select: { kind: true, side: true, step: true, milestone: true } }),
     db.referralReward.findMany({ where: { userId: referral.referrerId, kind: "MILESTONE", clawedBackAt: null }, select: { milestone: true } }),
     installedCount(db, referral.referrerId),
+    // Lien grand-parrain → parrain encore valable : la v1 révoque par son statut, sans revokedAt (installed.ts)
     referral.grandReferrerId
       ? db.referral.findFirst({
-          where: { referrerId: referral.grandReferrerId, refereeId: referral.referrerId, revokedAt: null },
+          where: { referrerId: referral.grandReferrerId, refereeId: referral.referrerId, revokedAt: null, status: { not: "REVOKED" } },
           select: { referrer: { select: { bannedAt: true } } },
         })
       : null,

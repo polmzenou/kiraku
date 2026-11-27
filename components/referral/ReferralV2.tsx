@@ -116,7 +116,7 @@ async function LastGift({ reward, now }: { reward: LastReward; now: Date }) {
           name: reward.actor ?? "",
         })}
       </p>
-      <LotGifts lot={reward.lot} compact />
+      <LotGifts lot={reward.lot} multiplier={reward.multiplier} compact />
     </section>
   );
 }

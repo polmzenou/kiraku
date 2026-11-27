@@ -1,7 +1,7 @@
 import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Reason } from "@/lib/anticheat/score";
-import { mergeLots } from "@/lib/economy/lot-merge";
+import { mergeLots, scaleLot } from "@/lib/economy/lot-merge";
 import { planPayouts } from "@/lib/referral/payout";
 import type { ReferralV2Rules } from "@/lib/referral/rules";
 import type { StepTimes } from "@/lib/referral/steps";
@@ -167,8 +167,12 @@ export async function referralQueue(rules: ReferralV2Rules, locale: string, take
   const lotIds = parsed.flatMap((p) => p.due.flatMap((d) => (d.lotId ? [d.lotId] : [])));
   const memberIds = [...new Set(parsed.flatMap((p) => [p.r.referrerId, p.r.refereeId, ...p.siblings]))];
   const [lots, members] = await Promise.all([lotViews(lotIds, locale), membersById(memberIds)]);
+  // Chaque lot compté autant de fois qu'il sera versé (×2 de l'Ennichi figé sur les étapes 1 et 2)
   const side = (due: typeof parsed[number]["due"], s: "REFEREE" | "REFERRER") =>
-    mergeLots<LotLine, LotView>(due.filter((d) => d.side === s && d.lotId).map((d) => lots.get(d.lotId!) ?? null), lineKey);
+    mergeLots<LotLine, LotView>(
+      due.filter((d) => d.side === s && d.lotId).map((d) => scaleLot<LotLine, LotView>(lots.get(d.lotId!) ?? null, d.multiplier)),
+      lineKey,
+    );
 
   const items = parsed.map(({ r, siblings, reasons, times, due, device }): QueueItem => ({
     id: r.id,

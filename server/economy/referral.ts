@@ -10,7 +10,7 @@ import { pushNotifications } from "../push/send";
 import { clientIp, rateLimit } from "../ratelimit";
 import { attachReferralV2With, ReferralV2Error, type AttachV2Refusal } from "../referral/attach-core";
 import { progressDeps, referralFingerprintKey, referralV2Rules } from "../referral/deps";
-import { recordFingerprints, refereeFingerprints } from "../referral/fingerprint";
+import { fingerprintTaken, recordFingerprints, refereeFingerprints } from "../referral/fingerprint";
 import { openReferralIdsOf, progressReferralWith } from "../referral/progress-core";
 import { getSetting } from "../settings";
 import { referralRules } from "./deps";
@@ -138,16 +138,24 @@ export async function progressOwnReferral(userId: string): Promise<void> {
 
 /**
  * Liaison Discord d'un filleul v2 : date de son compte Discord (confiance : un Discord ancien libère tout de suite la
- * part « confiance » de son parrain), empreinte gardée, puis avancement. Jamais bloquant.
+ * part « confiance » de son parrain), empreinte gardée, puis avancement. Un Discord qui a déjà servi à un autre
+ * parrainage (compte supprimé, puis lié à ce compte rattaché par e-mail) ne compte pas pour la confiance : filleul une
+ * seule fois par compte Discord, ce parrainage reste celui d'une boîte e-mail. Jamais bloquant.
  */
 export async function referralDiscordLinked(userId: string, discordId: string): Promise<void> {
   try {
     const referral = await prisma.referral.findUnique({ where: { refereeId: userId }, select: { id: true, version: true, discordCreatedAt: true, revokedAt: true } });
     if (!referral || referral.version !== 2 || referral.revokedAt) return;
-    if (!referral.discordCreatedAt) {
-      await prisma.referral.update({ where: { id: referral.id }, data: { discordCreatedAt: snowflakeDate(discordId) }, select: { id: true } });
-    }
-    await prisma.$transaction((tx) => recordFingerprints(tx, refereeFingerprints({ discordId, email: null }, referralFingerprintKey()), referral.id));
+    const prints = refereeFingerprints({ discordId, email: null }, referralFingerprintKey());
+    const reused = await prisma.$transaction(async (tx) => {
+      if (await fingerprintTaken(tx, prints, referral.id)) return true;
+      await recordFingerprints(tx, prints, referral.id);
+      if (!referral.discordCreatedAt) {
+        await tx.referral.update({ where: { id: referral.id }, data: { discordCreatedAt: snowflakeDate(discordId) }, select: { id: true } });
+      }
+      return false;
+    });
+    if (reused) console.warn("[parrainage] Discord déjà filleul d'un autre parrainage : pas de confiance haute", referral.id);
     progressLater([referral.id]);
   } catch (e) {
     console.error("[parrainage] liaison Discord non prise en compte", e);

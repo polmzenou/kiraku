@@ -18,7 +18,8 @@ vi.mock("server-only", () => ({}));
 // Décisions de l'équipe sur une vraie base (base de test isolée) : sauté sans DATABASE_URL_TEST.
 //   DATABASE_URL_TEST="postgresql://…" npx vitest run server/referral/review.db.test.ts
 // « Révoquer et bannir » reprend tout ce qui reste (journal = solde, crédits jamais négatifs), une deuxième reprise
-// n'a pas d'effet, une révocation simple ne reprend rien, une reprise en même temps qu'un versement reste juste.
+// n'a pas d'effet, une révocation simple ne reprend rien (et peut encore passer à « Révoquer et bannir »), une reprise
+// en même temps qu'un versement reste juste.
 
 const url = process.env.DATABASE_URL_TEST;
 const DAY = 86_400_000;
@@ -198,6 +199,21 @@ describe.skipIf(!url)("décisions de l'équipe sur un parrainage (base réelle)"
     await revokeReferralWith(prisma, { staffId: users.par.id, referralId, ban: false, reason: "doute", now: new Date(T0.getTime() + 2 * HOUR), sharedIpCap: 4 });
     expect(await payDueRewardsWith(prisma, referralId, deps(new Date(T0.getTime() + 3 * HOUR)))).toBe(0);
     expect(await state("max")).toMatchObject({ coins: 0, banned: false });
+  });
+
+  it("un parrainage seulement révoqué peut encore passer à « Révoquer et bannir », une seule fois", async () => {
+    const before = await prisma.referral.findUniqueOrThrow({ where: { refereeId: users.max.id }, select: { id: true, revokedAt: true } });
+    expect(await previewRevokeWith(prisma, before.id)).not.toBeNull();
+    const ban = (now: Date) => revokeReferralWith(prisma, { staffId: users.par.id, referralId: before.id, ban: true, reason: "triche trouvée ensuite", now, sharedIpCap: 4 });
+    const outcome = await ban(new Date(T0.getTime() + 4 * HOUR));
+    expect(outcome.banned).toContain(users.max.id);
+    // La date de la révocation reste, la décision devient le bannissement
+    expect(await prisma.referral.findUniqueOrThrow({ where: { id: before.id }, select: { revokedAt: true, reviewDecision: true } })).toEqual({
+      revokedAt: before.revokedAt,
+      reviewDecision: "BANNED",
+    });
+    expect(await previewRevokeWith(prisma, before.id)).toBeNull();
+    await expect(ban(new Date(T0.getTime() + 5 * HOUR))).rejects.toMatchObject({ code: "ALREADY_REVOKED" });
   });
 
   it("une reprise lancée en même temps qu'une validation reste juste : rien n'échappe à la reprise", async () => {

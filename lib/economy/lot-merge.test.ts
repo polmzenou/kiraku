@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeLots } from "./lot-merge";
+import { mergeLots, scaleLot } from "./lot-merge";
 
 type Line = { kind: string; quantity: number; slug: string };
 type Lot = { id: string; name: string; zeni: number; lines: Line[] };
@@ -39,5 +39,23 @@ describe("mergeLots", () => {
     mergeLots([a, b], keyOf);
     expect(a.lines[0].quantity).toBe(1);
     expect(b.lines[0].quantity).toBe(1);
+  });
+});
+
+describe("scaleLot", () => {
+  it("multiplie les Zeni et les quantités sans toucher au lot reçu", () => {
+    const a = lot("a", 1000, ["std", 5], ["myth", 1]);
+    expect(scaleLot(a, 2)).toEqual({ ...a, zeni: 2000, lines: [{ kind: "BOOSTER", slug: "std", quantity: 10 }, { kind: "BOOSTER", slug: "myth", quantity: 2 }] });
+    expect(a.zeni).toBe(1000);
+    expect(a.lines[0].quantity).toBe(5);
+  });
+
+  it("rend le lot tel quel à ×1, avec un facteur mal formé, et null sans lot", () => {
+    const a = lot("a", 10, ["std", 5]);
+    expect(scaleLot(a, 1)).toBe(a);
+    expect(scaleLot(a, 0)).toBe(a);
+    expect(scaleLot(a, 1.5)).toBe(a);
+    expect(scaleLot(a, Number.NaN)).toBe(a);
+    expect(scaleLot<Line, Lot>(null, 2)).toBeNull();
   });
 });

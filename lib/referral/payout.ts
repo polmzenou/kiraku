@@ -51,6 +51,14 @@ export type PayoutInput = {
   grandAllowed: boolean;
 };
 
+/**
+ * Multiplicateur d'une étape : le ×N de l'Ennichi figé au rattachement sur les étapes 1 et 2 (et leurs parts
+ * « confiance »), ×1 sinon. Le même pour le versement et pour ce que les pages annoncent.
+ */
+export function stepMultiplier(ennichiMultiplier: number | null, step: number): number {
+  return ennichiMultiplier !== null && step <= 2 ? Math.max(1, ennichiMultiplier) : 1;
+}
+
 export function planPayouts(input: PayoutInput, rules: Pick<ReferralV2Rules, "stepLots" | "grandLotId" | "milestones">): DueReward[] {
   const { referral } = input;
   const done = (kind: RewardKind, side: RewardSide | null, step: number | null) =>
@@ -62,7 +70,7 @@ export function planPayouts(input: PayoutInput, rules: Pick<ReferralV2Rules, "st
     if (!at) return;
     const step = i + 1;
     const lots = rules.stepLots[i];
-    const multiplier = referral.ennichiMultiplier !== null && step <= 2 ? Math.max(1, referral.ennichiMultiplier) : 1;
+    const multiplier = stepMultiplier(referral.ennichiMultiplier, step);
     const big = step >= 3;
     if (lots.referee && !done("STEP", "REFEREE", step)) {
       due.push({ ...base, kind: "STEP", side: "REFEREE", step, userId: referral.refereeId, actorId: referral.referrerId, lotId: lots.referee, multiplier, big });

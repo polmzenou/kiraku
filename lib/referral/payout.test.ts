@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { planPayouts, type PayoutInput } from "./payout";
+import { planPayouts, stepMultiplier, type PayoutInput } from "./payout";
 import { DEFAULT_REFERRAL_V2_RULES, type ReferralV2Rules } from "./rules";
 import type { StepTimes } from "./steps";
 
@@ -66,6 +66,12 @@ describe("ce qu'un parrainage doit verser", () => {
     expect(due.filter((d) => d.step === 2).map((d) => d.multiplier)).toEqual([3, 3, 3]);
     // Un multiplicateur figé mal formé ne retire rien : au moins ×1
     expect(planPayouts(input({}, { ennichiMultiplier: 0 }), RULES).every((d) => d.multiplier === 1)).toBe(true);
+  });
+
+  it("stepMultiplier : le ×N figé sur les étapes 1 et 2 seulement, ×1 hors fête", () => {
+    expect([1, 2, 3, 4].map((step) => stepMultiplier(2, step))).toEqual([2, 2, 1, 1]);
+    expect([1, 2, 3, 4].map((step) => stepMultiplier(null, step))).toEqual([1, 1, 1, 1]);
+    expect(stepMultiplier(0, 1)).toBe(1);
   });
 
   it("grand-parrainage à l'étape 2, une fois, s'il est permis", () => {

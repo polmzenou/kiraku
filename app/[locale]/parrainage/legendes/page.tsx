@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { PageShell } from "@/components/PageShell";
+import { PrivateNameLock } from "@/components/social/PrivateNameLock";
 import { Link } from "@/i18n/navigation";
+import { publicNamesFor } from "@/server/collection/public-names";
 import { referralV2Rules } from "@/server/referral/deps";
 import { legendWall } from "@/server/referral/legends";
 import { installedCount } from "@/server/referral/payout-core";
@@ -37,8 +39,12 @@ export default async function LegendsPage() {
   const wall = await legendWall(rules);
   const threshold = wall.threshold ?? 100;
   const me = user && !user.isGuest ? user.id : null;
-  const onWall = me !== null && wall.entries.some((e) => e.userId === me);
-  const mine = me && !onWall ? await installedCount(prisma, me) : null;
+  const onWall = me !== null && wall.entries.some((e) => e.player.id === me);
+  // Pseudos selon la visibilité du profil (un profil privé reste anonyme, sauf pour lui-même et un admin)
+  const [mine, shownName] = await Promise.all([
+    me && !onWall ? installedCount(prisma, me) : null,
+    publicNamesFor(me, wall.entries.map((e) => e.player)),
+  ]);
 
   return (
     <PageShell>
@@ -72,14 +78,16 @@ export default async function LegendsPage() {
               </li>
             ) : (
               wall.entries.map((e, i) => {
-                const isMe = e.userId === me;
+                const isMe = e.player.id === me;
+                const shown = shownName(e.player);
                 return (
-                  <li key={e.userId} className="grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-[rgb(31_27_23/0.12)] pb-2 last:border-b-0 last:pb-0">
+                  <li key={e.player.id} className="grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-2.5 border-b border-[rgb(31_27_23/0.12)] pb-2 last:border-b-0 last:pb-0">
                     <span aria-hidden="true" lang="ja" className="flex size-8 items-center justify-center rounded-sm bg-shu-btn font-seal text-base text-washi-paper">
                       {i === 0 ? "壱" : "縁"}
                     </span>
                     <span className="min-w-0">
-                      <b className={`font-title font-extrabold ${isMe ? "text-[#8e2018]" : ""}`}>{e.name}</b>
+                      <b className={`font-title font-extrabold ${isMe ? "text-[#8e2018]" : ""}`}>{shown.name}</b>
+                      {shown.revealed && <PrivateNameLock className="ml-1 align-[-2px] text-[#5c544a]" />}
                       {isMe && <span className="ml-1.5 inline-block rounded-pill bg-[#c8372d] px-1.5 align-[2px] text-[10.5px] font-bold text-[#f8f2e4]">{t("me")}</span>}
                       <br />
                       <span className="text-xs text-[#5c544a]">{t("friends", { count: e.installed })}</span>

@@ -75,9 +75,13 @@ export async function progressReferralWith(db: PrismaClient, referralId: string,
       heldAt: true,
       reviewedAt: true,
       revokedAt: true,
+      referee: { select: { bannedAt: true } },
     },
   });
   if (!referral || referral.version !== 2 || referral.revokedAt) return { reached: 0, paid: 0 };
+  // Filleul banni (multi-comptes, triche ailleurs) : comme en v1, il n'avance plus. Sans cela, le cron poserait son
+  // étape 2 au bout des 48 h et paierait son parrain. Une décision de l'équipe (valider) reste possible.
+  if (referral.referee.bannedAt) return { reached: 0, paid: 0 };
   const facts = await refereeFactsWith(db, referral, deps.rules, deps.timeZone);
   if (!facts) return { reached: 0, paid: 0 };
 

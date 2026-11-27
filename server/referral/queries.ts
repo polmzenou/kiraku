@@ -1,7 +1,7 @@
 import "server-only";
-import { mergeLots } from "@/lib/economy/lot-merge";
+import { mergeLots, scaleLot } from "@/lib/economy/lot-merge";
 import { milestonePays, nextMilestone, reachedMilestones } from "@/lib/referral/ladder";
-import type { RewardKind, RewardSide } from "@/lib/referral/payout";
+import { stepMultiplier, type RewardKind, type RewardSide } from "@/lib/referral/payout";
 import type { ReferralV2Rules } from "@/lib/referral/rules";
 import { stepProgress, type StepState, type StepTimes } from "@/lib/referral/steps";
 import { refereeTrust, trustPartDue, type Trust } from "@/lib/referral/trust";
@@ -53,6 +53,8 @@ export type SelfView = {
   status: "ACTIVE" | "HELD" | "REVOKED";
   steps: StepRow[];
   cardLockUntil: string | null;
+  /** ×N de l'Ennichi figé à son arrivée sur ses étapes 1 et 2 (1 hors fête). */
+  multiplier: number;
 };
 export type LastReward = {
   kind: RewardKind;
@@ -62,6 +64,8 @@ export type LastReward = {
   /** L'autre joueur : le filleul pour le parrain, le parrain pour le filleul, le filleul du filleul pour le grand-parrain. */
   actor: string | null;
   lot: LotView | null;
+  /** Fois où le lot a été versé (×2 de l'Ennichi). */
+  multiplier: number;
   at: string;
 };
 export type ReferralV2View = {
@@ -89,14 +93,12 @@ const DAY = 86_400_000;
 
 const lineKey = (l: LotLine) => (l.kind === "BOOSTER" ? `B:${l.look.slug}` : l.kind === "CARD" ? `C:${l.card?.cardId ?? l.name}` : `R:${l.rarity}`);
 const merge = (lots: readonly (LotView | null)[]) => mergeLots<LotLine, LotView>(lots, lineKey);
-
 /** Lot multiplié (×2 de l'Ennichi sur les étapes 1 et 2), pour l'additionner à d'autres. */
-const scaleLot = (lot: LotView | null, m: number): LotView | null =>
-  lot && m !== 1 ? { ...lot, zeni: lot.zeni * m, lines: lot.lines.map((l) => ({ ...l, quantity: l.quantity * m })) } : lot;
+const scale = (lot: LotView | null, m: number) => scaleLot<LotLine, LotView>(lot, m);
 
 /** Ce que reçoit le parrain, en tout, pour un ami qui va au bout des étapes ; `multiplier` sur les étapes 1 et 2. */
 export function referrerMonthTotal(steps: readonly StepGifts[], multiplier = 1): LotView | null {
-  return merge(steps.map((s, i) => scaleLot(s.referrerTotal, i < 2 ? multiplier : 1)));
+  return merge(steps.map((s, i) => scale(s.referrerTotal, i < 2 ? multiplier : 1)));
 }
 
 function rowsOf(progress: ReturnType<typeof stepProgress>, now: Date): StepRow[] {
@@ -114,17 +116,26 @@ function statusOf(r: { revokedAt: Date | null; reviewDecision: string | null; he
 /**
  * Ce que la prochaine étape `step` d'un filleul versera au parrain : le lot de l'étape, et les parts « confiance » qui
  * tombent avec elle (la sienne si la confiance est haute ; à l'étape 3, celles des étapes 1 et 2 qui l'attendaient).
- * `later` : sa part « confiance » quand elle attendra l'étape 3.
+ * `later` : sa part « confiance » quand elle attendra l'étape 3. `ennichi` : ×N figé à l'arrivée du filleul, compté
+ * comme au versement (étapes 1 et 2 et leurs parts « confiance »).
  */
-function nextGain(step: number, times: StepTimes, trust: Trust, rules: ReferralV2Rules, lot: (id: string | null) => LotView | null, now: Date) {
+function nextGain(
+  step: number,
+  times: StepTimes,
+  trust: Trust,
+  rules: ReferralV2Rules,
+  lot: (id: string | null) => LotView | null,
+  now: Date,
+  ennichi: number | null,
+) {
   const after = times.map((at, i) => (i === step - 1 ? now : at)) as unknown as StepTimes;
-  const parts = [lot(rules.stepLots[step - 1].referrer)];
+  const parts = [scale(lot(rules.stepLots[step - 1].referrer), stepMultiplier(ennichi, step))];
   for (const k of [1, 2] as const) {
     const trustLot = rules.stepLots[k - 1].referrerTrust;
-    if (trustLot && trustPartDue(k, after, trust) && !trustPartDue(k, times, trust)) parts.push(lot(trustLot));
+    if (trustLot && trustPartDue(k, after, trust) && !trustPartDue(k, times, trust)) parts.push(scale(lot(trustLot), stepMultiplier(ennichi, k)));
   }
   const own = step <= 2 ? rules.stepLots[step - 1].referrerTrust : null;
-  const later = own && !trustPartDue(step as 1 | 2, after, trust) ? lot(own) : null;
+  const later = own && !trustPartDue(step as 1 | 2, after, trust) ? scale(lot(own), stepMultiplier(ennichi, step)) : null;
   return { now: merge(parts), later };
 }
 
@@ -192,6 +203,7 @@ export async function referralPageV2(
         heldAt: true,
         reviewDecision: true,
         revokedAt: true,
+        ennichiMultiplier: true,
         referrer: { select: { username: true, image: true } },
         referee: { select: { referredAt: true } },
       },
@@ -212,6 +224,7 @@ export async function referralPageV2(
         reviewDecision: true,
         revokedAt: true,
         discordCreatedAt: true,
+        ennichiMultiplier: true,
         referee: { select: { username: true, image: true, discordLinkedAt: true } },
         rewards: { where: { side: "REFERRER", kind: "STEP" }, select: { step: true } },
       },
@@ -225,6 +238,7 @@ export async function referralPageV2(
         step: true,
         milestone: true,
         lotId: true,
+        multiplier: true,
         createdAt: true,
         referral: { select: { referrerId: true, referee: { select: { username: true } }, referrer: { select: { username: true } } } },
       },
@@ -250,36 +264,39 @@ export async function referralPageV2(
         ? rowsOf(stepProgress(facts, times(own), rules, timeZone, now, { held, paid: [1, 2, 3, 4].map((s) => paid.some((p) => p.step === s)) }), now)
         : [],
       cardLockUntil: lockUntil && lockUntil > now ? lockUntil.toISOString() : null,
+      multiplier: stepMultiplier(own.ennichiMultiplier, 1),
     };
   }
 
-  // Filleuls : avancement de ceux qui sont encore en route, ce que leur prochaine étape rapporte au parrain
-  const referees: RefereeRowView[] = [];
-  for (const r of mine) {
-    const status = statusOf(r);
-    const held = status === "HELD";
-    const paid = [1, 2, 3, 4].map((s) => r.rewards.some((w) => w.step === s));
-    const facts = status === "REVOKED" || status === "BANNED" || status === "DONE" ? null : await refereeFactsWith(prisma, r, rules, timeZone);
-    const progress = facts ? stepProgress(facts, times(r), rules, timeZone, now, { held, paid }) : null;
-    const rows = progress
-      ? rowsOf(progress, now)
-      : times(r).map((at) => ({ state: (at ? "DONE" : "LOCKED") as StepState, at: iso(at), have: 0, need: 0, readyAt: null, deadline: null }));
-    const nextIndex = rows.findIndex((s) => s.state === "NEXT" || (held && s.state === "HELD" && !s.at));
-    const next = nextIndex >= 0 ? { ...rows[nextIndex], step: nextIndex + 1 } : null;
-    const trust = refereeTrust({ createdAt: r.discordCreatedAt, linkedAt: r.referee.discordLinkedAt }, rules);
-    const gain = next ? nextGain(next.step, times(r), trust, rules, lot, now) : null;
-    referees.push({
-      id: r.id,
-      name: r.referee.username,
-      image: r.referee.image,
-      status,
-      steps: rows,
-      done: times(r).filter(Boolean).length,
-      next,
-      nextLot: gain?.now ?? null,
-      trustLater: gain?.later ?? null,
-    });
-  }
+  // Filleuls : avancement de ceux qui sont encore en route (lus en parallèle), ce que leur prochaine étape rapporte au
+  // parrain
+  const referees: RefereeRowView[] = await Promise.all(
+    mine.map(async (r): Promise<RefereeRowView> => {
+      const status = statusOf(r);
+      const held = status === "HELD";
+      const paid = [1, 2, 3, 4].map((s) => r.rewards.some((w) => w.step === s));
+      const facts = status === "REVOKED" || status === "BANNED" || status === "DONE" ? null : await refereeFactsWith(prisma, r, rules, timeZone);
+      const progress = facts ? stepProgress(facts, times(r), rules, timeZone, now, { held, paid }) : null;
+      const rows = progress
+        ? rowsOf(progress, now)
+        : times(r).map((at) => ({ state: (at ? "DONE" : "LOCKED") as StepState, at: iso(at), have: 0, need: 0, readyAt: null, deadline: null }));
+      const nextIndex = rows.findIndex((s) => s.state === "NEXT" || (held && s.state === "HELD" && !s.at));
+      const next = nextIndex >= 0 ? { ...rows[nextIndex], step: nextIndex + 1 } : null;
+      const trust = refereeTrust({ createdAt: r.discordCreatedAt, linkedAt: r.referee.discordLinkedAt }, rules);
+      const gain = next ? nextGain(next.step, times(r), trust, rules, lot, now, r.ennichiMultiplier) : null;
+      return {
+        id: r.id,
+        name: r.referee.username,
+        image: r.referee.image,
+        status,
+        steps: rows,
+        done: times(r).filter(Boolean).length,
+        next,
+        nextLot: gain?.now ?? null,
+        trustLater: gain?.later ?? null,
+      };
+    }),
+  );
   const totals = {
     installed,
     onTheWay: referees.filter((r) => r.status === "ON_THE_WAY").length,
@@ -291,7 +308,7 @@ export async function referralPageV2(
     const r = last.referral;
     const actor = !r ? null : r.referrerId === userId ? r.referee.username : r.referrer.username;
     const lastLot = last.lotId ? (lot(last.lotId) ?? (await lotViews([last.lotId], locale)).get(last.lotId) ?? null) : null;
-    lastReward = { kind: last.kind, side: last.side, step: last.step, milestone: last.milestone, actor, lot: lastLot, at: last.createdAt.toISOString() };
+    lastReward = { kind: last.kind, side: last.side, step: last.step, milestone: last.milestone, actor, lot: lastLot, multiplier: last.multiplier, at: last.createdAt.toISOString() };
   }
 
   const since = me.registeredAt ?? me.createdAt;

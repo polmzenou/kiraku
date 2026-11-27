@@ -35,7 +35,8 @@ export function SelfStairs({ self, steps, conditions, timeZone }: { self: SelfVi
               <span className="text-sm font-bold">
                 {tSteps(`${stepNo(i + 1)}.name`)} · <span className="font-normal text-text-muted">{tSteps(`${stepNo(i + 1)}.you`, conditions)}</span>
               </span>
-              <LotGifts lot={steps[i]?.referee ?? null} compact />
+              {/* ×2 de l'Ennichi figé à son arrivée : ses étapes 1 et 2 lui versent le lot deux fois */}
+              <LotGifts lot={steps[i]?.referee ?? null} multiplier={i < 2 ? self.multiplier : 1} compact />
               {s.state === "DONE" && <span className="self-start rounded-sm bg-hisui/15 px-2 text-[11px] font-bold text-hisui">{t("received")}</span>}
               {s.state === "HELD" && s.at && <span className="self-start rounded-sm bg-kin/15 px-2 text-[11px] font-bold text-kin">{t("waiting")}</span>}
               {s.state === "MISSED" && <span className="self-start rounded-sm bg-surface-2 px-2 text-[11px] font-bold text-text-muted">{t("missed")}</span>}

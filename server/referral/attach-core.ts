@@ -106,6 +106,10 @@ export async function attachReferralV2With(db: PrismaClient, input: AttachV2Inpu
     });
     await tx.user.update({ where: { id: referee.id }, data: { referredById: referrer.id, referredAt: input.now }, select: { id: true } });
     await recordFingerprints(tx, prints, referral.id);
+    // Deux comptes à la même empreinte (alias d'une même boîte) rattachés au même instant, chez deux parrains : les
+    // verrous ne se croisent pas et le contrôle d'avant passe des deux côtés. L'index de l'empreinte tranche : celui qui
+    // ne l'a pas gardée est annulé.
+    if (await fingerprintTaken(tx, prints, referral.id)) throw new ReferralV2Error("ALREADY_REFERRED");
     return { referralId: referral.id, referrerId: referrer.id };
   }, TX);
 }

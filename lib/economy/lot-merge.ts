@@ -21,3 +21,13 @@ export function mergeLots<L extends { quantity: number }, T extends { id: string
   }
   return { ...list[0], id: list.map((l) => l.id).join("+"), zeni: list.reduce((sum, l) => sum + l.zeni, 0), lines };
 }
+
+/**
+ * Un lot versé `factor` fois (×2 de l'Ennichi sur les étapes 1 et 2), montré comme un seul cadeau : Zeni et quantités
+ * multipliés. Un facteur de 1 (ou mal formé) rend le lot reçu tel quel.
+ */
+export function scaleLot<L extends { quantity: number }, T extends { zeni: number; lines: readonly L[] }>(lot: T | null, factor: number): T | null {
+  const m = Number.isSafeInteger(factor) && factor > 1 ? factor : 1;
+  if (!lot || m === 1) return lot;
+  return { ...lot, zeni: lot.zeni * m, lines: lot.lines.map((l) => ({ ...l, quantity: l.quantity * m })) };
+}
