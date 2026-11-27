@@ -9,7 +9,9 @@ import { isProduction } from "./env";
 // ici, Auth.js (Discord) les crée lui-même ; toutes vivent dans la table Session
 // et dans le même cookie.
 
-export const SESSION_MAX_AGE = 90 * 24 * 60 * 60; // 90 jours, prolongée à l'usage
+// 90 jours, prolongée à l'usage : la ligne en base par auth() (une fois par jour), le cookie par la relecture
+// quotidienne de /api/auth/session (components/auth/SessionRefresh.tsx)
+export const SESSION_MAX_AGE = 90 * 24 * 60 * 60;
 
 export const SESSION_COOKIE = {
   name: isProduction ? "__Secure-kiraku.session" : "kiraku.session",

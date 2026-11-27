@@ -4,8 +4,8 @@ import { cookies } from "next/headers";
 import { refresh } from "next/cache";
 import { z } from "@/lib/zod";
 import { Prisma } from "@/generated/prisma/client";
-import { ANONYMIZED_PREFIX, confirmsUsername, isFrozen } from "@/lib/account/deletion";
-import { USERNAME_REGEX } from "@/lib/username";
+import { confirmsUsername, isFrozen } from "@/lib/account/deletion";
+import { hasReservedPrefix, USERNAME_REGEX } from "@/lib/username";
 import { AccountError, cancelDeletionWith, requestDeletionWith } from "../account/account-core";
 import { prisma } from "../db";
 import { currentTermsVersion } from "../legal";
@@ -105,7 +105,8 @@ const usernameSchema = z.object({
     .string()
     .trim()
     .regex(USERNAME_REGEX)
-    .refine((u) => !u.toLowerCase().startsWith(ANONYMIZED_PREFIX)),
+    // Ni « supprime- » ni « guest- » : réservés aux pseudos générés
+    .refine((u) => !hasReservedPrefix(u)),
 });
 
 const DAY_MS = 86_400_000;

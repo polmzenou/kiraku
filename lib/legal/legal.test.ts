@@ -66,6 +66,10 @@ describe("acceptation des CGU", () => {
     expect(isTermsGateFree("/cgu")).toBe(true);
     expect(isTermsGateFree("/en/confidentialite")).toBe(true);
     expect(isTermsGateFree("/connexion/mot-de-passe-oublie")).toBe(true);
+    // Export et suppression du compte restent accessibles sans accepter la nouvelle version
+    expect(isTermsGateFree("/compte/donnees")).toBe(true);
+    expect(isTermsGateFree("/en/compte/donnees")).toBe(true);
+    expect(isTermsGateFree("/compte")).toBe(false);
     expect(isTermsGateFree("/")).toBe(false);
     expect(isTermsGateFree("/cguxyz")).toBe(false);
     expect(isTermsGateFree("/marche")).toBe(false);
@@ -87,5 +91,8 @@ describe("liens des textes légaux", () => {
     expect(safeLegalUrl("http://exemple.com")).toBe("");
     expect(safeLegalUrl("//evil.example")).toBe("");
     expect(safeLegalUrl("/\\evil.example")).toBe("");
+    // Tabulation ou saut de ligne retirés par le navigateur : « //evil.example »
+    expect(safeLegalUrl("/\t/evil.example")).toBe("");
+    expect(safeLegalUrl("/\n/evil.example")).toBe("");
   });
 });

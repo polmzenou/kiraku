@@ -25,7 +25,11 @@ export type StoragePurpose =
   | "kyaraBanner"
   | "wrappedBanner"
   | "speedInsights"
-  | "security";
+  | "security"
+  | "guestNotice"
+  | "battleSpeed"
+  | "fxTier"
+  | "tilt";
 
 export type StorageDuration = { unit: "session" | "none" } | { unit: "minutes" | "days"; value: number } | { unit: "persistent" };
 
@@ -144,10 +148,70 @@ export const STORAGE_REGISTRY: readonly StorageEntry[] = [
     exempt: true,
   },
   {
+    // Date de la dernière prolongation du cookie de session (components/auth/SessionRefresh.tsx, une fois par jour)
+    name: "kiraku.session-refreshed",
+    kind: "localStorage",
+    category: "necessary",
+    purpose: "session",
+    duration: { unit: "persistent" },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
     name: "kiraku.sound",
     kind: "localStorage",
     category: "preferences",
     purpose: "sound",
+    duration: { unit: "persistent" },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
+    // Musique du combat (components/battle/stage/useBattleSound.ts)
+    name: "kiraku.music",
+    kind: "localStorage",
+    category: "preferences",
+    purpose: "sound",
+    duration: { unit: "persistent" },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
+    // Vitesse du replay de combat (components/battle/stage/useBattleSpeed.ts)
+    name: "kiraku.battle.speed",
+    kind: "localStorage",
+    category: "preferences",
+    purpose: "battleSpeed",
+    duration: { unit: "persistent" },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
+    // Niveau d'effets mesuré sur cet appareil (components/motion/fx-tier.ts)
+    name: "kiraku-fx-tier",
+    kind: "localStorage",
+    category: "preferences",
+    purpose: "fxTier",
+    duration: { unit: "persistent" },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
+    // Réponse à la demande d'accès à l'inclinaison du téléphone (lib/tilt-dom.ts, iPhone)
+    name: "kiraku:tilt",
+    kind: "localStorage",
+    category: "preferences",
+    purpose: "tilt",
+    duration: { unit: "persistent" },
+    provider: "kiraku",
+    exempt: true,
+  },
+  {
+    // Bandeau des invités repoussé 24 h (« Plus tard », components/account/GuestRetentionNotice.tsx)
+    name: "kiraku.guestNotice.hiddenUntil",
+    kind: "localStorage",
+    category: "preferences",
+    purpose: "guestNotice",
     duration: { unit: "persistent" },
     provider: "kiraku",
     exempt: true,

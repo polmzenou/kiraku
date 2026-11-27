@@ -30,6 +30,14 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       prestige: true,
       prestigedAt: true,
       featuredAchievement: true,
+      bio: true,
+      titleAgreement: true,
+      vanityCode: true,
+      privacyChosenAt: true,
+      usernameChangedAt: true,
+      lastSeenAt: true,
+      bannedAt: true,
+      ambassadorSince: true,
       createdAt: true,
       registeredAt: true,
     },
@@ -247,7 +255,10 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     }),
     db.referral.findMany({
       where: { OR: [{ referrerId: userId }, { refereeId: userId }] },
-      select: { referrerId: true, status: true, createdAt: true, qualifiedAt: true },
+      select: {
+        referrerId: true, status: true, createdAt: true, qualifiedAt: true,
+        step1At: true, step2At: true, step3At: true, step4At: true, revokedAt: true, discordCreatedAt: true,
+      },
     }),
     db.referralMilestoneClaim.findMany({
       where: { userId },
@@ -316,11 +327,61 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     }),
   ]);
 
-  const achievements = await db.userAchievement.findMany({
-    where: { userId },
-    orderBy: [{ unlockedAt: "asc" }, { key: "asc" }],
-    select: { key: true, unlockedAt: true },
-  });
+  const [
+    achievements,
+    chatMessages,
+    sealedDrops,
+    vouchers,
+    lotGrants,
+    teamGifts,
+    ambassadorPackClaims,
+    seriesCompletions,
+    pollVotes,
+    referralRewards,
+    ennichiResults,
+    ennichiAwards,
+    ennichiTierGrants,
+  ] = await Promise.all([
+    db.userAchievement.findMany({
+      where: { userId },
+      orderBy: [{ unlockedAt: "asc" }, { key: "asc" }],
+      select: { key: true, unlockedAt: true },
+    }),
+    db.chatMessage.findMany({
+      where: { OR: [{ senderId: userId }, { recipientId: userId }] },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      select: { senderId: true, body: true, createdAt: true, readAt: true, sender: { select: { username: true } }, recipient: { select: { username: true } } },
+    }),
+    db.sealedDrop.findMany({
+      where: { ownerId: userId },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, boosterTypeId: true, source: true, giftable: true, createdAt: true, openedAt: true },
+    }),
+    db.voucher.findMany({ where: { userId }, orderBy: { createdAt: "asc" }, select: { kind: true, createdAt: true, usedAt: true, cardId: true } }),
+    // Le motif saisi par l'équipe (reason) reste interne, comme celui d'un ban réseau
+    db.lotGrant.findMany({ where: { userId }, orderBy: { createdAt: "asc" }, select: { lotId: true, message: true, createdAt: true } }),
+    db.teamGift.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: { kind: true, cardId: true, boosterTypeId: true, quantity: true, message: true, createdAt: true },
+    }),
+    db.ambassadorPackClaim.findMany({ where: { userId }, orderBy: { createdAt: "asc" }, select: { periodKey: true, boosterTypeId: true, count: true, createdAt: true } }),
+    db.seriesCompletion.findMany({ where: { userId }, orderBy: { completedAt: "asc" }, select: { seriesId: true, completedAt: true } }),
+    db.pollVote.findMany({ where: { userId }, orderBy: { createdAt: "asc" }, select: { poll: true, answer: true, createdAt: true, updatedAt: true } }),
+    db.referralReward.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: { kind: true, side: true, step: true, milestone: true, multiplier: true, lotId: true, granted: true, ennichiEdition: true, createdAt: true, clawedBackAt: true },
+    }),
+    db.ennichiResult.findMany({
+      where: { userId },
+      orderBy: [{ edition: "asc" }, { rank: "asc" }],
+      select: { edition: true, rank: true, name: true, count: true, reachedAt: true, title: true },
+    }),
+    db.ennichiAward.findMany({ where: { userId }, orderBy: { createdAt: "asc" }, select: { edition: true, kind: true, prize: true, granted: true, createdAt: true } }),
+    // Paliers de lanternes, sans l'empreinte d'IP gardée contre la fraude
+    db.ennichiTierGrant.findMany({ where: { userId }, orderBy: { createdAt: "asc" }, select: { edition: true, tier: true, granted: true, createdAt: true } }),
+  ]);
 
   const input: ExportInput = {
     profile,
@@ -403,6 +464,27 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
       };
     }),
     blocked: blocks.map((b) => ({ username: b.blocked.username, createdAt: b.createdAt })),
+    chatMessages: chatMessages.map((m) => {
+      const sent = m.senderId === userId;
+      return {
+        direction: sent ? "SENT" : "RECEIVED",
+        otherUsername: sent ? m.recipient.username : m.sender.username,
+        body: m.body,
+        createdAt: m.createdAt,
+        readAt: m.readAt,
+      };
+    }),
+    sealedDrops,
+    vouchers,
+    lotGrants,
+    teamGifts,
+    ambassadorPackClaims,
+    seriesCompletions,
+    pollVotes,
+    referralRewards,
+    ennichiResults,
+    ennichiAwards,
+    ennichiTierGrants,
     gifts: gifts.map((g) => {
       const sent = g.senderId === userId;
       return {
@@ -416,12 +498,22 @@ export async function collectExportWith(db: PrismaClient, userId: string, now: D
     }),
     missions,
     purchases,
-    referrals: referrals.map((r) => ({
-      role: r.referrerId === userId ? "REFERRER" : "REFEREE",
-      status: r.status,
-      createdAt: r.createdAt,
-      qualifiedAt: r.qualifiedAt,
-    })),
+    referrals: referrals.map((r) => {
+      const referee = r.referrerId !== userId;
+      return {
+        role: referee ? "REFEREE" : "REFERRER",
+        status: r.status,
+        createdAt: r.createdAt,
+        qualifiedAt: r.qualifiedAt,
+        step1At: r.step1At,
+        step2At: r.step2At,
+        step3At: r.step3At,
+        step4At: r.step4At,
+        revokedAt: r.revokedAt,
+        // Date du compte Discord du filleul : la sienne seulement, jamais celle de son ami
+        discordCreatedAt: referee ? r.discordCreatedAt : null,
+      };
+    }),
     referralMilestones,
     seasons,
     review,

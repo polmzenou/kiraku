@@ -43,6 +43,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           issuer: "https://discord.com",
           profile: async (profile, tokens) => ({
             ...(await defaultDiscordProfile(profile, tokens)),
+            // Adresse non vérifiée chez Discord : jamais reprise (elle bloquerait l'inscription de son vrai titulaire)
+            email: profile.verified ? profile.email : null,
             discordUsername: profile.username,
           }),
         }),

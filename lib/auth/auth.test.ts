@@ -34,6 +34,12 @@ describe("registerSchema", () => {
     });
   });
 
+  it("refuse un pseudo qui imite un invité ou un compte supprimé", () => {
+    for (const username of ["guest-3A046F", "Supprime-k3x9q2ab"]) {
+      expect(fieldErrors(registerSchema.safeParse({ ...valid, username }).error!)).toEqual({ username: "usernameReserved" });
+    }
+  });
+
   it("exige la case des conditions d'utilisation", () => {
     expect(fieldErrors(registerSchema.safeParse({ ...valid, terms: null }).error!)).toEqual({ terms: "termsRequired" });
     expect(fieldErrors(registerSchema.safeParse({ ...valid, terms: "off" }).error!)).toEqual({ terms: "termsRequired" });

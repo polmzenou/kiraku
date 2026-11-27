@@ -399,6 +399,16 @@ export async function purgeOldNotifications(userId: string, retentionDays: numbe
   await prisma.notification.deleteMany({ where: { userId, readAt: { not: null }, createdAt: { lt: cutoff } } });
 }
 
+/**
+ * Même règle pour tous les joueurs (cron des comptes) : la purge paresseuse ne passe que par la page des
+ * notifications, celles lues dans les toasts ou par un joueur qui ne revient plus restaient sans limite.
+ */
+export async function purgeReadNotifications(retentionDays: number, now = new Date()) {
+  const cutoff = new Date(now.getTime() - retentionDays * 86_400_000);
+  const { count } = await prisma.notification.deleteMany({ where: { readAt: { not: null }, createdAt: { lt: cutoff } } });
+  return count;
+}
+
 // --- Admin ---
 
 export async function recentGifts(take = 50) {

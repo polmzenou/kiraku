@@ -55,6 +55,7 @@ describe.skipIf(!url)("suppression et anonymisation du compte (base réelle)", (
   afterAll(async () => {
     if (ids.length) {
       await prisma.$transaction([
+        prisma.adminLog.deleteMany({ where: { adminId: { in: ids } } }),
         prisma.dataRequest.deleteMany({ where: { userId: { in: ids } } }),
         prisma.friendship.deleteMany({ where: { OR: [{ requesterId: { in: ids } }, { addresseeId: { in: ids } }] } }),
         prisma.session.deleteMany({ where: { userId: { in: ids } } }),
@@ -97,6 +98,19 @@ describe.skipIf(!url)("suppression et anonymisation du compte (base réelle)", (
   it("à l'échéance, anonymisation complète et somme des soldes inchangée", async () => {
     const before = await coinsSum();
     const ledgerBefore = await prisma.coinTransaction.count({ where: { userId: b.id } });
+    // Copies de son identité hors de sa ligne : bio, message privé, journal de l'équipe (renommage par l'admin)
+    await prisma.user.update({ where: { id: b.id }, data: { bio: "Je suis Bob de Lyon", titleAgreement: "FEM" } });
+    await prisma.chatMessage.create({ data: { pairKey: [a.id, b.id].sort().join(":"), senderId: b.id, recipientId: a.id, body: "Mon numéro : 06…" } });
+    const log = await prisma.adminLog.create({
+      data: {
+        adminId: a.id,
+        action: "USER_ACCOUNT",
+        targetType: "User",
+        targetId: b.id,
+        before: { username: b.username, role: "USER" },
+        after: { values: { username: "Bob-renomme", role: "USER" }, reason: "pseudo" },
+      },
+    });
     const past = new Date(Date.now() - 31 * 86_400_000);
     await requestDeletionWith(prisma, { userId: b.id, now: past, graceDays: 30 });
 
@@ -105,7 +119,11 @@ describe.skipIf(!url)("suppression et anonymisation du compte (base réelle)", (
 
     const user = await prisma.user.findUniqueOrThrow({ where: { id: b.id } });
     expect(user.username).toMatch(/^supprime-[a-z2-9]{8}$/);
-    expect(user).toMatchObject({ email: null, passwordHash: null, image: null, profileVisibility: "PRIVATE" });
+    expect(user).toMatchObject({ email: null, passwordHash: null, image: null, bio: null, vanityCode: null, titleAgreement: "MASC", profileVisibility: "PRIVATE" });
+    expect(await prisma.chatMessage.count({ where: { OR: [{ senderId: b.id }, { recipientId: b.id }] } })).toBe(0);
+    const scrubbed = await prisma.adminLog.findUniqueOrThrow({ where: { id: log.id } });
+    expect(scrubbed.before).toEqual({ role: "USER" });
+    expect(scrubbed.after).toEqual({ values: { role: "USER" }, reason: "pseudo" });
     expect(user.anonymizedAt).not.toBeNull();
     expect(await prisma.account.count({ where: { userId: b.id } })).toBe(0);
     expect(await prisma.friendship.count({ where: { OR: [{ requesterId: b.id }, { addresseeId: b.id }] } })).toBe(0);

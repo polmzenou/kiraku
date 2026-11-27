@@ -2,10 +2,11 @@
 // Le client Prisma est injecté (serveur, cron ou test sur base réelle) : pas de server/db.ts ici.
 //
 // L'anonymisation efface ce qui désigne une personne (pseudo, e-mail, avatar, id Discord, sessions,
-// liens sociaux, avis) mais garde le journal des Zeni, les cartes, les tirages, les combats et les
-// ventes : l'économie reste juste et la somme des soldes ne bouge pas.
+// liens sociaux, avis, bio, messages privés, et leurs copies dans le journal de l'équipe et les bilans de
+// saison) mais garde le journal des Zeni, les cartes, les tirages, les combats et les ventes : l'économie
+// reste juste et la somme des soldes ne bouge pas.
 import { randomBytes } from "node:crypto";
-import type { PrismaClient } from "@/generated/prisma/client";
+import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { anonymizedUsername, deletionDueAt } from "@/lib/account/deletion";
 import { dropQueueSeatInTx, leaveQueueWith } from "../battle/battle-core";
 import { withdrawCasinoFor } from "../casino/coinflip-core";
@@ -157,6 +158,11 @@ export async function anonymizeUserWith(
         role: "USER",
         profileVisibility: "PRIVATE",
         showCollection: false,
+        // Texte saisi par le joueur, code perso de parrainage (souvent son nom : /i/CODE menait encore au compte),
+        // accord des titres (dit le genre choisi)
+        bio: null,
+        vanityCode: null,
+        titleAgreement: "MASC",
         battleTeam: [],
         // Hors du classé : plus de place dans les positions, le top du Grand Champion, les divisions ni le bilan de saison
         rankPoints: 0,
@@ -179,6 +185,8 @@ export async function anonymizeUserWith(
     await tx.authToken.deleteMany({ where: { userId } });
     await tx.pushSubscription.deleteMany({ where: { userId } });
     await tx.userSignal.deleteMany({ where: { userId } }); // IP et appareils (multi-comptes)
+    // Empreinte d'IP des paliers de lanternes de l'Ennichi (SHA-256 sans secret d'une IPv4 : réversible) ; le palier reste
+    await tx.ennichiTierGrant.updateMany({ where: { userId, ipHash: { not: null } }, data: { ipHash: null } });
     await forgetKyaraImportsFor(tx, userId, input.now); // import Kyara : le verrou d'un import versé reste
     // Liens sociaux et contenus personnels
     await tx.notification.deleteMany({ where: { OR: [{ userId }, { actorId: userId }] } });
@@ -191,6 +199,8 @@ export async function anonymizeUserWith(
     await tx.showcaseEventEntry.deleteMany({ where: { userId } }); // vitrine engagée à l'event vitrines, ses votes en cascade
     await tx.showcaseEventVote.deleteMany({ where: { voterId: userId } });
     await tx.review.deleteMany({ where: { userId } });
+    // Messages privés (purgés après chat.retentionHours) : ceux qu'il a écrits comme ceux qu'il a reçus
+    await tx.chatMessage.deleteMany({ where: { OR: [{ senderId: userId }, { recipientId: userId }] } });
     await tx.tradeListing.updateMany({ where: { ownerId: userId, note: { not: null } }, data: { note: null } });
     await tx.auction.updateMany({ where: { sellerId: userId, note: { not: null } }, data: { note: null } });
     await tx.trade.updateMany({ where: { proposerId: userId, note: { not: null } }, data: { note: null } });
@@ -200,6 +210,9 @@ export async function anonymizeUserWith(
     await dropQueueSeatInTx(tx, userId);
     // Provenance des exemplaires spéciaux : le joueur y devient « compte supprimé », chez lui comme chez les autres
     await tx.userCardOwner.updateMany({ where: { ownerId: userId }, data: { ownerId: null } });
+    // Copies hors de sa ligne : journal de l'équipe et bilans de saison figés
+    await scrubAdminLogs(tx, userId);
+    await scrubSeasonSnapshots(tx, before.username);
 
     await tx.dataRequest.updateMany({
       where: { userId, kind: "DELETION", status: "PENDING" },
@@ -218,6 +231,54 @@ export async function anonymizeUserWith(
     }
     return true;
   }, TX);
+}
+
+// Clés du journal de l'équipe qui recopient ce qui désigne le joueur : pseudo (renommage), e-mail, code perso de
+// parrainage. L'action, sa date, ses chiffres et le motif de l'équipe restent.
+const ADMIN_LOG_IDENTITY_KEYS = ["username", "email", "code"];
+
+/**
+ * Journal de l'équipe (AdminLog) : retire de `before` et `after` (et de `after.values`, forme de la fiche joueur) les
+ * copies de son identité dans les lignes qui le visent, et les textes qu'il avait saisis (note du Marché, nom d'une
+ * vitrine de l'event) dans les lignes de modération qui le citent comme auteur.
+ */
+async function scrubAdminLogs(tx: Tx, userId: string) {
+  await tx.$executeRaw`
+    UPDATE "AdminLog" SET
+      "before" = CASE WHEN jsonb_typeof("before") = 'object' THEN "before" - ${ADMIN_LOG_IDENTITY_KEYS}::text[] ELSE "before" END,
+      "after" = CASE
+        WHEN "after" IS NULL OR jsonb_typeof("after") <> 'object' THEN "after"
+        WHEN jsonb_typeof("after" -> 'values') = 'object'
+          THEN jsonb_set("after" - ${ADMIN_LOG_IDENTITY_KEYS}::text[], '{values}', ("after" -> 'values') - ${ADMIN_LOG_IDENTITY_KEYS}::text[])
+        ELSE "after" - ${ADMIN_LOG_IDENTITY_KEYS}::text[]
+      END
+    WHERE "targetType" = 'User' AND "targetId" = ${userId}`;
+  await tx.$executeRaw`
+    UPDATE "AdminLog" SET "before" = "before" - 'note'
+    WHERE "targetType" IN ('Auction', 'TradeListing') AND jsonb_typeof("before") = 'object' AND "before" ->> 'authorId' = ${userId}`;
+  await tx.$executeRaw`
+    UPDATE "AdminLog" SET "before" = "before" - 'name'
+    WHERE "targetType" = 'ShowcaseEventEntry' AND jsonb_typeof("before") = 'object' AND "before" ->> 'userId' = ${userId}`;
+}
+
+/**
+ * Bilans de saison figés à la clôture (top 10 des profils publics, posté sur Discord) : sa ligne en sort, avec son
+ * pseudo et son avatar Discord (qui porte l'id de son compte). Repéré par le pseudo du moment, faute d'id dans la photo.
+ */
+async function scrubSeasonSnapshots(tx: Tx, username: string) {
+  const seasons = await tx.season.findMany({
+    where: { leaderboardSnapshot: { not: Prisma.DbNull } },
+    select: { id: true, leaderboardSnapshot: true },
+  });
+  for (const season of seasons) {
+    const snapshot = season.leaderboardSnapshot;
+    if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot) || !Array.isArray(snapshot.entries)) continue;
+    const entries = snapshot.entries.filter(
+      (e) => !(e && typeof e === "object" && !Array.isArray(e) && e.username === username),
+    );
+    if (entries.length === snapshot.entries.length) continue;
+    await tx.season.update({ where: { id: season.id }, data: { leaderboardSnapshot: { ...snapshot, entries } } });
+  }
 }
 
 /** Anonymise les demandes arrivées à échéance (cron quotidien), par lots, dans le budget de temps. */

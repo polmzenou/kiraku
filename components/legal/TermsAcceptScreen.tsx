@@ -41,6 +41,12 @@ export function TermsAcceptScreen({ version, firstTime }: { version: number; fir
             {t("readPrivacy")}
           </Link>
         </li>
+        {/* Refuser reste possible : l'export et la suppression du compte ne demandent pas d'accepter */}
+        <li>
+          <Link href="/compte/donnees" className="inline-flex min-h-11 items-center font-medium text-ai underline underline-offset-4">
+            {t("myData")}
+          </Link>
+        </li>
       </ul>
       <label className="flex min-h-11 items-start gap-3 text-sm">
         <input

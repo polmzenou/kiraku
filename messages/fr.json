@@ -303,6 +303,7 @@
     "fieldErrors": {
       "required": "Champ obligatoire.",
       "usernameFormat": "3 à 20 caractères : lettres, chiffres, _ et -.",
+      "usernameReserved": "Ce début de pseudo est réservé (guest-, supprime-).",
       "emailFormat": "Adresse e-mail invalide.",
       "passwordTooShort": "10 caractères minimum.",
       "passwordTooLong": "128 caractères maximum.",
@@ -7246,6 +7247,7 @@
       "bodyUpdated": "Une nouvelle version (v{version}) des conditions d'utilisation est en vigueur. Lis-la et accepte-la pour continuer à jouer.",
       "readTerms": "Lire les conditions d'utilisation",
       "readPrivacy": "Lire la politique de confidentialité",
+      "myData": "Télécharger mes données ou supprimer mon compte",
       "checkbox": "J'ai lu et j'accepte les conditions d'utilisation et la politique de confidentialité.",
       "submit": "Accepter et continuer",
       "pending": "Un instant…",
@@ -7295,7 +7297,11 @@
       "kyaraBanner": "Retient que tu as masqué la bannière de l'import Kyara sur cet appareil.",
       "wrappedBanner": "Retient que tu as masqué la bannière du Wrapped de l'année sur cet appareil.",
       "nav": "Retient la disposition de la navigation sur ordinateur (menus en haut ou barre latérale).",
-      "security": "Identifiant aléatoire de cet appareil : repère la création de comptes en série et fait respecter un bannissement."
+      "security": "Identifiant aléatoire de cet appareil : repère la création de comptes en série et fait respecter un bannissement.",
+      "guestNotice": "Retient que tu as repoussé le rappel des comptes invités (« Plus tard », 24 h).",
+      "battleSpeed": "Retient la vitesse choisie pour le déroulé des combats.",
+      "fxTier": "Retient le niveau d'effets visuels adapté à cet appareil.",
+      "tilt": "Retient ta réponse à l'accès à l'inclinaison du téléphone (reflets des cartes)."
     },
     "kinds": {
       "cookie": "Cookie",

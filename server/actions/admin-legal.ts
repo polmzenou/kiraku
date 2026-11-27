@@ -36,7 +36,9 @@ export async function saveLegalDraftAction(input: unknown): Promise<AdminLegalRe
       select: { id: true },
     });
     if (existing) {
-      await tx.legalPage.update({ where: { id: existing.id }, data: { title, body } });
+      // Conditionnel : un autre admin a pu publier ce brouillon entre-temps, une version publiée ne change plus
+      const saved = await tx.legalPage.updateMany({ where: { id: existing.id, status: "DRAFT" }, data: { title, body } });
+      if (saved.count === 0) return null;
     } else {
       await tx.legalPage.create({ data: { slug, locale, version: target, title, body, status: "DRAFT" } });
     }
@@ -49,6 +51,7 @@ export async function saveLegalDraftAction(input: unknown): Promise<AdminLegalRe
     });
     return target;
   });
+  if (version === null) return { ok: false, error: "STALE" };
   return { ok: true, version };
 }
 

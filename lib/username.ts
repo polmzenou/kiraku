@@ -1,6 +1,17 @@
+import { ANONYMIZED_PREFIX } from "./account/deletion";
+
 export const USERNAME_REGEX = /^[A-Za-z0-9_-]{3,20}$/;
 
 export const GUEST_PREFIX = "guest-";
+
+/**
+ * Pseudo choisi par un joueur qui imiterait un pseudo généré (invité, compte supprimé), casse ignorée : il se ferait
+ * passer pour un compte supprimé et échapperait au rapprochement des pseudos de l'anti-triche (lib/anticheat/score.ts).
+ */
+export function hasReservedPrefix(username: string): boolean {
+  const name = username.toLowerCase();
+  return name.startsWith(GUEST_PREFIX) || name.startsWith(ANONYMIZED_PREFIX);
+}
 const GUEST_CODE_LENGTH = 6;
 
 /** Pseudo stocké d'un invité, ex. « guest-3A046F » ; affiché « Invité-3A046F » via t(). */
@@ -13,9 +24,9 @@ export function guestCode(username: string): string | null {
   return username.startsWith(GUEST_PREFIX) ? username.slice(GUEST_PREFIX.length) : null;
 }
 
-/** Pseudo dérivé d'un nom Discord : caractères autorisés seulement, sinon null. */
+/** Pseudo dérivé d'un nom Discord : caractères autorisés seulement, jamais un préfixe réservé, sinon null. */
 export function sanitizeUsername(raw: string | null | undefined): string | null {
   if (!raw) return null;
   const cleaned = raw.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 20);
-  return USERNAME_REGEX.test(cleaned) ? cleaned : null;
+  return USERNAME_REGEX.test(cleaned) && !hasReservedPrefix(cleaned) ? cleaned : null;
 }

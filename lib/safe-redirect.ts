@@ -1,11 +1,13 @@
-/** Limite une cible de redirection à un chemin interne au site. */
+/**
+ * Limite une cible de redirection au site lui-même. L'adresse est d'abord résolue comme le ferait le navigateur,
+ * puis son origine comparée : « /\t/evil.example » (tabulation ou saut de ligne retirés à la lecture) devient
+ * « //evil.example » et sort du site, un simple contrôle du préfixe ne le voyait pas.
+ */
 export function safeRedirect(url: string, baseUrl: string): string {
-  if (url.startsWith("/") && !url.startsWith("//") && !url.startsWith("/\\")) {
-    return new URL(url, baseUrl).toString();
-  }
   try {
-    const target = new URL(url);
-    if (target.origin === new URL(baseUrl).origin) return target.toString();
+    const base = new URL(baseUrl);
+    const target = new URL(url, base);
+    if (target.origin === base.origin) return target.toString();
   } catch {
     // URL invalide : on retombe sur l'accueil
   }

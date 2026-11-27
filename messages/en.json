@@ -303,6 +303,7 @@
     "fieldErrors": {
       "required": "Required.",
       "usernameFormat": "3 to 20 characters: letters, digits, _ and -.",
+      "usernameReserved": "This username prefix is reserved (guest-, supprime-).",
       "emailFormat": "Invalid email address.",
       "passwordTooShort": "At least 10 characters.",
       "passwordTooLong": "128 characters max.",
@@ -7246,6 +7247,7 @@
       "bodyUpdated": "A new version (v{version}) of the terms of use is in force. Read and accept it to keep playing.",
       "readTerms": "Read the terms of use",
       "readPrivacy": "Read the privacy policy",
+      "myData": "Download my data or delete my account",
       "checkbox": "I have read and accept the terms of use and the privacy policy.",
       "submit": "Accept and continue",
       "pending": "One moment…",
@@ -7295,7 +7297,11 @@
       "kyaraBanner": "Remembers that you've hidden the Kyara import banner on this device.",
       "wrappedBanner": "Remembers that you've hidden this year's Wrapped banner on this device.",
       "nav": "Remembers the desktop navigation layout (top menus or sidebar).",
-      "security": "Random identifier for this device: spots mass account creation and enforces bans."
+      "security": "Random identifier for this device: spots mass account creation and enforces bans.",
+      "guestNotice": "Remembers that you postponed the guest account reminder (\"Later\", 24 h).",
+      "battleSpeed": "Remembers the playback speed chosen for battles.",
+      "fxTier": "Remembers the level of visual effects suited to this device.",
+      "tilt": "Remembers your answer about access to your phone's tilt (card reflections)."
     },
     "kinds": {
       "cookie": "Cookie",

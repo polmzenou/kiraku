@@ -1,5 +1,5 @@
 import { z } from "@/lib/zod";
-import { USERNAME_REGEX } from "../username";
+import { hasReservedPrefix, USERNAME_REGEX } from "../username";
 import { passwordProblem } from "./password-policy";
 
 // Les messages sont des codes, traduits côté interface (auth.fieldErrors.*).
@@ -21,7 +21,11 @@ const newPassword = z
 
 export const registerSchema = z
   .object({
-    username: z.string("required").trim().regex(USERNAME_REGEX, "usernameFormat"),
+    username: z
+      .string("required")
+      .trim()
+      .regex(USERNAME_REGEX, "usernameFormat")
+      .refine((u) => !hasReservedPrefix(u), "usernameReserved"),
     email,
     password: newPassword,
     passwordConfirm: z.string("required"),
@@ -66,6 +70,7 @@ export const resetPasswordSchema = z
 export const FIELD_ERROR_CODES = [
   "required",
   "usernameFormat",
+  "usernameReserved",
   "emailFormat",
   "passwordTooShort",
   "passwordTooLong",

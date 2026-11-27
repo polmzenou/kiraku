@@ -81,6 +81,18 @@ describe("annonce à la première liaison Auth.js", () => {
     expect(profile.image).toMatch(/^https:\/\/cdn\.discordapp\.com\/embed\/avatars\/[0-5]\.png$/);
   });
 
+  it("ne reprend pas une adresse que Discord n'a pas vérifiée", async () => {
+    const provider = config.providers[0] as ReturnType<typeof Discord>;
+    const profile = await provider.options!.profile!({
+      id: "987654321098765432", username: "sakura", global_name: "Sakura", avatar: null,
+      discriminator: "0", email: "victime@example.com",
+      mfa_enabled: false, banner: null, accent_color: null, locale: "fr", verified: false,
+      flags: 0, premium_type: 0, public_flags: 0, display_name: null, avatar_decoration: null,
+      banner_color: null, image_url: "",
+    }, {});
+    expect(profile.email).toBeNull();
+  });
+
   it("attend la validation de la transaction et envoie après la réponse, même sans bonus", async () => {
     mocks.setting.mockResolvedValue(0);
     mocks.transaction.mockImplementation(async (callback) => {

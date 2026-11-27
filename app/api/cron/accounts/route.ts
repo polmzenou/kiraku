@@ -9,6 +9,7 @@ import { prisma } from "@/server/db";
 import { purgeOldPulls } from "@/server/home/pulls";
 import { referralFingerprintKey } from "@/server/referral/deps";
 import { purgeExpiredRateLimits } from "@/server/ratelimit";
+import { purgeReadNotifications } from "@/server/social/queries";
 import { getSetting } from "@/server/settings";
 
 // Tâches quotidiennes de ménage (vercel.json) :
@@ -17,8 +18,9 @@ import { getSetting } from "@/server/settings";
 // - comptes invités abandonnés (créés il y a plus de guest.retentionDays jours, sans activité depuis) ;
 // - IP et appareils des joueurs non revus depuis multiAccount.retentionDays (multi-comptes), et bans réseau
 //   automatiques expirés (ceux posés par l'admin restent jusqu'à leur levée) ;
-// - compteurs de limitation expirés, messages de chat et gros tirages périmés (filet de sécurité
-//   derrière le ménage paresseux des sondages).
+// - compteurs de limitation expirés, messages de chat, notifications lues plus vieilles que
+//   notifications.retentionDays et gros tirages périmés (filet de sécurité derrière le ménage paresseux des sondages
+//   et de la page des notifications).
 // Détails des échecs dans les logs seulement ; un ménage raté n'empêche pas les autres.
 
 export const dynamic = "force-dynamic";
@@ -50,6 +52,7 @@ export async function GET(request: Request) {
       rateLimits = await purgeExpiredRateLimits(8_000);
     }),
     chat: await housekeeping("chat", async () => purgeOldMessages(await getSetting("chat.retentionHours"))),
+    notifications: await housekeeping("notifications", async () => purgeReadNotifications(await getSetting("notifications.retentionDays"))),
     pulls: await housekeeping("tirages", () => purgeOldPulls()),
     signals: await housekeeping("signaux", () => purgeOldSignals(new Date())),
     networkBans: await housekeeping("bans réseau", () => purgeExpiredNetworkBans(prisma, new Date())),

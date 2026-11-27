@@ -23,7 +23,7 @@ import { prisma } from "../db";
 import { mailEnabled } from "../env";
 import { attachFromCookie } from "../economy/referral";
 import { createPlayer, publishProfileOnSignup, startingValues } from "../players";
-import { clientIp, rateLimit } from "../ratelimit";
+import { clientNetworkKey, rateLimit } from "../ratelimit";
 import { destroyCurrentSession, startSession } from "../session";
 import { checkFormGuard } from "../form-guard";
 import { currentTermsVersion } from "../legal";
@@ -63,7 +63,7 @@ export async function register(_prev: FormState, formData: FormData): Promise<Fo
 
   // Par IP, et par e-mail : on ne teste pas des adresses en série depuis plusieurs IP
   const [byIp, byEmail] = await Promise.all([
-    rateLimit(`register:${await clientIp()}`, { limit: 5, windowSeconds: HOUR }),
+    rateLimit(`register:${await clientNetworkKey()}`, { limit: 5, windowSeconds: HOUR }),
     rateLimit(`register:email:${email}`, { limit: 3, windowSeconds: HOUR }),
   ]);
   if (!byIp.success || !byEmail.success) return { error: "rateLimited", values };
@@ -132,7 +132,7 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
   const { email, password } = parsed.data;
 
   const [byIp, byEmail] = await Promise.all([
-    rateLimit(`login:ip:${await clientIp()}`, { limit: 20, windowSeconds: 15 * 60 }),
+    rateLimit(`login:ip:${await clientNetworkKey()}`, { limit: 20, windowSeconds: 15 * 60 }),
     rateLimit(`login:email:${email}`, { limit: 5, windowSeconds: 15 * 60 }),
   ]);
   if (!byIp.success || !byEmail.success) return { error: "rateLimited", values };
@@ -172,7 +172,7 @@ export async function requestPasswordReset(_prev: FormState, formData: FormData)
   const { email } = parsed.data;
 
   const [byIp, byEmail] = await Promise.all([
-    rateLimit(`reset:ip:${await clientIp()}`, { limit: 5, windowSeconds: HOUR }),
+    rateLimit(`reset:ip:${await clientNetworkKey()}`, { limit: 5, windowSeconds: HOUR }),
     rateLimit(`reset:email:${email}`, { limit: 3, windowSeconds: HOUR }),
   ]);
   if (!byIp.success || !byEmail.success) return { error: "rateLimited" };
@@ -203,7 +203,7 @@ export async function resetPassword(_prev: FormState, formData: FormData): Promi
     return fields.token ? { error: "tokenInvalid" } : { fields };
   }
 
-  if (!(await rateLimit(`reset-use:${await clientIp()}`, { limit: 10, windowSeconds: HOUR })).success) {
+  if (!(await rateLimit(`reset-use:${await clientNetworkKey()}`, { limit: 10, windowSeconds: HOUR })).success) {
     return { error: "rateLimited" };
   }
 
@@ -241,7 +241,7 @@ export async function verifyEmail(_prev: FormState, formData: FormData): Promise
   const parsed = tokenSchema.safeParse(formData.get("token"));
   if (!parsed.success) return { error: "tokenInvalid" };
 
-  if (!(await rateLimit(`verify:${await clientIp()}`, { limit: 10, windowSeconds: HOUR })).success) {
+  if (!(await rateLimit(`verify:${await clientNetworkKey()}`, { limit: 10, windowSeconds: HOUR })).success) {
     return { error: "rateLimited" };
   }
 

@@ -7,19 +7,23 @@ import { getSetting } from "./settings";
 
 type Tx = Prisma.TransactionClient;
 
+// Nom venu de Discord : casse ignorée, comme l'inscription, le changement de pseudo et l'admin (« tristan » ne crée
+// pas un « Tristan » de plus : même profil /u/…, même cible des recherches par pseudo de l'équipe). Pseudo d'invité
+// généré : comparaison exacte (index unique), aucun joueur ne peut plus choisir le préfixe guest-.
+const usernameTaken = async (tx: Tx, username: string, anyCase: boolean) =>
+  (anyCase
+    ? await tx.user.findFirst({ where: { username: { equals: username, mode: "insensitive" } }, select: { id: true } })
+    : await tx.user.findUnique({ where: { username }, select: { id: true } })) !== null;
+
 /** Pseudo libre dérivé de `base`, avec un suffixe aléatoire si déjà pris. */
 export async function availableUsername(tx: Tx, base: string | null): Promise<string> {
   const clean = sanitizeUsername(base);
-  if (clean && !(await tx.user.findUnique({ where: { username: clean }, select: { id: true } }))) {
-    return clean;
-  }
+  if (clean && !(await usernameTaken(tx, clean, true))) return clean;
   for (let attempt = 0; attempt < 5; attempt++) {
     const candidate = clean
       ? `${clean.slice(0, 13)}-${randomBytes(3).toString("hex").toUpperCase()}`
       : guestUsername(randomBytes(3));
-    if (!(await tx.user.findUnique({ where: { username: candidate }, select: { id: true } }))) {
-      return candidate;
-    }
+    if (!(await usernameTaken(tx, candidate, clean !== null))) return candidate;
   }
   throw new Error("USERNAME_UNAVAILABLE");
 }

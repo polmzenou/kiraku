@@ -10,6 +10,7 @@ import { SwipeNav } from "@/components/layout/SwipeNav";
 import { PlayerAnnouncements } from "@/components/welcome/PlayerAnnouncements";
 import { AccountGate } from "@/components/legal/AccountGate";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import { SessionRefresh } from "@/components/auth/SessionRefresh";
 import { routing } from "@/i18n/routing";
 import { pickClientMessages } from "@/i18n/client-messages";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
@@ -71,7 +72,8 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   const navLayout = parseNavLayout(jar.get(NAV_LAYOUT_COOKIE)?.value);
   const clientMessages = pickClientMessages(await getMessages());
   // Code de parrain du joueur connecté, ajouté aux liens qu'il partage (lu une fois par requête, comme l'en-tête)
-  const shareCode = shareCodeOf(await getCurrentUser());
+  const user = await getCurrentUser();
+  const shareCode = shareCodeOf(user);
   const nonce = adsEnabled() ? ((await headers()).get("x-nonce") ?? undefined) : undefined;
 
   return (
@@ -90,6 +92,8 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
             </RealtimeRoot>
             <ConsentManager />
             <ServiceWorkerRegister />
+            {/* Cookie de session prolongé à l'usage (un composant serveur ne peut pas le réécrire) */}
+            {user && <SessionRefresh />}
           </MotionPreferenceProvider>
           </ShareCodeProvider>
         </NextIntlClientProvider>

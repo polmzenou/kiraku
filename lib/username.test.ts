@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { guestCode, guestUsername, sanitizeUsername, USERNAME_REGEX } from "./username";
+import { guestCode, guestUsername, hasReservedPrefix, sanitizeUsername, USERNAME_REGEX } from "./username";
 
 describe("USERNAME_REGEX", () => {
   it.each(["abc", "Kata_99", "a-b-c", "x".repeat(20)])("accepte %s", (name) => {
@@ -33,5 +33,20 @@ describe("sanitizeUsername", () => {
   it("renvoie null si le résultat est trop court", () => {
     expect(sanitizeUsername("✿✿")).toBeNull();
     expect(sanitizeUsername(null)).toBeNull();
+  });
+
+  it("refuse un nom qui imite un pseudo généré", () => {
+    expect(sanitizeUsername("guest-3A046F")).toBeNull();
+    expect(sanitizeUsername("Supprime-k3x9q2ab")).toBeNull();
+  });
+});
+
+describe("hasReservedPrefix", () => {
+  it.each(["guest-abc", "Guest-ABC", "supprime-k3x9q2ab", "SUPPRIME-x"])("réserve %s", (name) => {
+    expect(hasReservedPrefix(name)).toBe(true);
+  });
+
+  it.each(["guesthouse", "Kata", "supprimer", "my-guest-1"])("laisse %s", (name) => {
+    expect(hasReservedPrefix(name)).toBe(false);
   });
 });

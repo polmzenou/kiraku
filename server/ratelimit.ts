@@ -1,5 +1,6 @@
 import "server-only";
 import { headers } from "next/headers";
+import { ipBanKey } from "@/lib/anticheat/network";
 import { prisma } from "./db";
 
 type Rule = { limit: number; windowSeconds: number };
@@ -104,4 +105,14 @@ export async function purgeExpiredRateLimits(budgetMs = 10_000): Promise<number>
 export async function clientIp(): Promise<string> {
   const h = await headers();
   return h.get("x-forwarded-for")?.split(",").at(-1)?.trim() || h.get("x-real-ip") || "local";
+}
+
+/**
+ * Identifiant réseau d'une limite par IP : l'IPv4 exacte, une IPv6 par son préfixe /64 (comme les bans réseau). Un
+ * appareil change d'adresse à volonté dans son /64 : compter par adresse laisserait créer des invités ou essayer des
+ * mots de passe sans fin.
+ */
+export async function clientNetworkKey(): Promise<string> {
+  const ip = await clientIp();
+  return ipBanKey(ip) ?? ip;
 }

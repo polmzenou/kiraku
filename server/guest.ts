@@ -1,6 +1,4 @@
 import "server-only";
-import { randomBytes } from "node:crypto";
-import { guestUsername } from "@/lib/username";
 import { prisma } from "./db";
 import { availableUsername, createPlayer, startingValues } from "./players";
 import { createSessionRow } from "./session";
@@ -12,7 +10,8 @@ import { createSessionRow } from "./session";
 export async function createGuestSession() {
   const start = await startingValues();
   return prisma.$transaction(async (tx) => {
-    const username = await availableUsername(tx, guestUsername(randomBytes(3)));
+    // Sans nom de base : un pseudo d'invité tiré au hasard (guest-XXXXXX), retiré en cas de collision
+    const username = await availableUsername(tx, null);
     const user = await createPlayer(tx, { username, isGuest: true }, start);
     return { ...(await createSessionRow(tx, user.id)), userId: user.id };
   });

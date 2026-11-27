@@ -72,8 +72,9 @@ export function needsTermsAcceptance(
   return (user.termsVersion ?? 0) < requiredVersion;
 }
 
-// Chemins jamais masqués par l'écran d'acceptation : on doit pouvoir lire ce qu'on accepte.
-const GATE_FREE = ["/connexion", "/inscription", "/verifier-email", ...LEGAL_SLUGS.map((s) => `/${s}`)];
+// Chemins jamais masqués par l'écran d'acceptation : on doit pouvoir lire ce qu'on accepte. /compte/donnees : refuser
+// les nouvelles CGU ne prive pas de l'export ni de la suppression du compte (droits RGPD), comme leurs actions
+const GATE_FREE = ["/connexion", "/inscription", "/verifier-email", "/compte/donnees", ...LEGAL_SLUGS.map((s) => `/${s}`)];
 
 /** `pathname` sans le préfixe de langue (`/en/cgu` → `/cgu`). */
 export function stripLocale(pathname: string): string {
@@ -101,14 +102,23 @@ export function isNetworkGateFree(pathname: string): boolean {
   return stripLocale(pathname) === "/connexion" || startsWithAny(NETWORK_GATE_FREE, pathname);
 }
 
+const INTERNAL_BASE = "https://kiraku.invalid";
+
 /**
  * Liens des textes légaux : https, mailto et chemins internes seulement (jamais `javascript:`,
  * `data:` ni `//hôte`). Une URL refusée devient une chaîne vide (lien inerte).
  */
 export function safeLegalUrl(url: string): string {
   const value = url.trim();
-  if (value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/\\")) return value;
-  if (value.startsWith("#")) return value;
+  if (value.startsWith("/") || value.startsWith("#")) {
+    // Résolu comme le ferait le navigateur : « /\t/hôte » (tabulation retirée) ou « /\hôte » sortiraient du site
+    try {
+      if (new URL(value, INTERNAL_BASE).origin === INTERNAL_BASE) return value;
+    } catch {
+      // chemin illisible
+    }
+    return "";
+  }
   try {
     const parsed = new URL(value);
     if (parsed.protocol === "https:" || parsed.protocol === "mailto:") return parsed.toString();

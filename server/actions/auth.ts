@@ -2,13 +2,14 @@
 
 import { refresh } from "next/cache";
 import { after } from "next/server";
+import { isFrozen } from "@/lib/account/deletion";
 import { z } from "@/lib/zod";
 import { auth, signIn, signOut } from "../auth";
 import { discordEnabled } from "../env";
 import { noteBlocked, requestNetworkBan } from "../anticheat/network-ban";
 import { recordSignals } from "../anticheat/signals";
 import { createGuestSession } from "../guest";
-import { clientIp, rateLimit } from "../ratelimit";
+import { clientIp, clientNetworkKey, rateLimit } from "../ratelimit";
 import { setSessionCookie } from "../session";
 import { getSetting } from "../settings";
 import { getCurrentUser } from "../user";
@@ -44,7 +45,8 @@ export async function ensureGuest(): Promise<ActionResult> {
 
   if (!testIps.includes(ip)) {
     const limit = await getSetting("guest.createPerHourPerIp");
-    const { success } = await rateLimit(`guest:${ip}`, {
+    // Une IPv6 compte par son /64 : changer d'adresse ne rouvre pas le quota
+    const { success } = await rateLimit(`guest:${await clientNetworkKey()}`, {
       limit,
       windowSeconds: 3600,
     });
@@ -65,7 +67,8 @@ export async function ensureGuest(): Promise<ActionResult> {
 export async function linkDiscord(formData: FormData): Promise<void> {
   if (!discordEnabled) return;
   const user = await getCurrentUser();
-  if (!user || user.discordLinkedAt) return;
+  // Compte banni ou gelé (suppression demandée) : la liaison publierait le profil et verserait le bonus
+  if (!user || user.discordLinkedAt || user.bannedAt || isFrozen(user)) return;
 
   const parsed = internalPath.safeParse(formData.get("redirectTo"));
 
@@ -89,10 +92,10 @@ export async function continueWithDiscord(formData: FormData): Promise<void> {
   const intent = discordIntent.safeParse(formData.get("intent"));
   if (!intent.success) return;
   const user = await getCurrentUser();
-  // Un compte inscrit lie Discord depuis /compte (linkDiscord), pas d'ici
-  if (user && !user.isGuest) return;
+  // Un compte inscrit lie Discord depuis /compte (linkDiscord), pas d'ici ; un invité banni ou gelé n'en lie aucun
+  if (user && (!user.isGuest || (intent.data === "register" && (user.bannedAt || isFrozen(user))))) return;
 
-  const { success } = await rateLimit(`auth:${user?.id ?? await clientIp()}`, { limit: 10, windowSeconds: 60 });
+  const { success } = await rateLimit(`auth:${user?.id ?? await clientNetworkKey()}`, { limit: 10, windowSeconds: 60 });
   if (!success) return;
 
   if (user && intent.data === "login") await signOut({ redirect: false });

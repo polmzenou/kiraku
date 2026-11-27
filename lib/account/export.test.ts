@@ -69,6 +69,22 @@ describe("export des données", () => {
     expect(out.decks).toEqual([{ id: "d1", name: "Deck CSM", cardIds: ["a", "b", "c"], createdAt: now.toISOString(), updatedAt: now.toISOString() }]);
   });
 
+  it("exporte la bio, les messages privés et les cadeaux de l'équipe, sans le motif interne", () => {
+    const out = buildDataExport(
+      input({
+        profile: { id: "u1", username: "Kaito", bio: "Fan de Naruto", createdAt: now },
+        chatMessages: [{ direction: "SENT", otherUsername: "Aiko", body: "Salut", createdAt: now, readAt: null, senderId: "u1" }],
+        lotGrants: [{ lotId: "l1", message: "Merci !", reason: "compensation du bug", createdAt: now }],
+        ennichiTierGrants: [{ edition: 1, tier: 2, granted: { zeni: 100 }, ipHash: "abc", createdAt: now }],
+      }),
+      now,
+    );
+    expect(out.profile).toMatchObject({ bio: "Fan de Naruto" });
+    expect(out.chatMessages).toEqual([{ direction: "SENT", otherUsername: "Aiko", body: "Salut", createdAt: now.toISOString(), readAt: null }]);
+    expect(out.lotGrants).toEqual([{ lotId: "l1", message: "Merci !", createdAt: now.toISOString() }]);
+    expect(out.ennichiTierGrants).toEqual([{ edition: 1, tier: 2, granted: { zeni: 100 }, createdAt: now.toISOString() }]);
+  });
+
   it("nomme le fichier par la date", () => {
     expect(exportFileName(now)).toBe("kiraku-donnees-2026-10-16.json");
   });

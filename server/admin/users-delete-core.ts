@@ -136,9 +136,11 @@ export async function deleteUserWith(
         action: "USER_DELETE",
         targetType: "User",
         targetId: user.id,
+        // Pas l'e-mail : le journal le garderait sans limite après la suppression du compte (le pseudo suffit à retrouver
+        // qui a été supprimé)
         before: {
           username: user.username,
-          email: user.email,
+          hadEmail: user.email !== null,
           isGuest: user.isGuest,
           coins: user.coins,
           cards: user._count.cards,
