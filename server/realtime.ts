@@ -31,9 +31,22 @@ export async function publishSafely(label: string, publish: () => Promise<unknow
   }
 }
 
+/**
+ * Publie sur un canal sans le garder : le client REST d'Ably range chaque canal demandé (channels.get) dans un registre
+ * qu'il ne vide jamais seul, soit un objet de plus par joueur prévenu et par partie, pour toute la vie du processus.
+ * release() ne fait que l'en retirer : un canal REST déjà obtenu (publication simultanée) reste utilisable.
+ */
+export async function publishOn(rest: NonNullable<typeof ablyRest>, name: string, event: string, data: unknown) {
+  try {
+    await rest.channels.get(name).publish(event, data);
+  } finally {
+    rest.channels.release(name);
+  }
+}
+
 /** Publie sur le canal d'un joueur sans jamais faire échouer l'action appelante. */
 export async function publishToUser(userId: string, event: string, data: unknown) {
   if (!ablyRest) return;
   const rest = ablyRest;
-  await publishSafely(event, () => rest.channels.get(userChannel(userId)).publish(event, data));
+  await publishSafely(event, () => publishOn(rest, userChannel(userId), event, data));
 }

@@ -29,6 +29,11 @@ function candidates(version: number) {
     value.catch(() => {
       if (memo?.value === value) memo = null;
     });
+    // Rendus au ramasse-miettes au bout de l'heure, même si l'éditeur n'est plus ouvert : sinon ils restaient dans le
+    // tas jusqu'au redémarrage (10 000 cartes, leurs genres et tags, une dizaine de Mo) après un seul aperçu
+    setTimeout(() => {
+      if (memo?.value === value) memo = null;
+    }, MEMO_MS).unref();
   }
   return memo.value;
 }

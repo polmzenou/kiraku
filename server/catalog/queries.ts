@@ -193,10 +193,14 @@ const loadFilterOptions = unstable_cache(
   cacheOptions,
 );
 
+async function readSummaries(ids: number[]): Promise<CatalogCardSummary[]> {
+  return (await prisma.card.findMany({ where: { publicId: { in: ids }, status: { not: "DRAFT" } }, select: summarySelect })).map(publicCard);
+}
+
 const loadSummaries = unstable_cache(
   async (ids: number[], _version: number): Promise<CatalogCardSummary[]> => {
     void _version;
-    return (await prisma.card.findMany({ where: { publicId: { in: ids }, status: { not: "DRAFT" } }, select: summarySelect })).map(publicCard);
+    return readSummaries(ids);
   },
   ["catalog-summaries"],
   cacheOptions,
@@ -225,10 +229,16 @@ export async function getCatalogFilterOptions(locale: string) {
   return loadFilterOptions(locale, await getCatalogVersion());
 }
 
-/** Public summaries only; selected IDs may vary, but no collection data is cached. */
-export async function getCatalogSummaries(ids: readonly number[]) {
+/**
+ * Public summaries only; selected IDs may vary, but no collection data is cached. `shared: false` : liste propre à un
+ * joueur (filtre « possédées » ou « manquantes » du wiki, tirée de sa collection), lue sans le cache de Next. Sa clé
+ * (les ids de sa page) ne servirait qu'à lui : une entrée et un fichier de plus par page vue, jamais relus par un autre,
+ * pour une lecture de 48 cartes par leur clé unique.
+ */
+export async function getCatalogSummaries(ids: readonly number[], { shared = true }: { shared?: boolean } = {}) {
   if (ids.length === 0) return [];
-  const rows = await loadSummaries([...new Set(ids)].sort((a, b) => a - b), await getCatalogVersion());
+  const sorted = [...new Set(ids)].sort((a, b) => a - b);
+  const rows = shared ? await loadSummaries(sorted, await getCatalogVersion()) : await readSummaries(sorted);
   const byId = new Map(rows.map((r) => [r.anilistId, r]));
   return ids.flatMap((id) => {
     const card = byId.get(id);

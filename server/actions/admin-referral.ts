@@ -17,7 +17,7 @@ import { previewRevokeWith, ReviewError, revokeReferralWith, validateReferralWit
 import { getSetting } from "../settings";
 import { checkEnnichiWith, drawEnnichiWith, EnnichiCloseError, payAwardsWith, type EnnichiCloseErrorCode } from "../ennichi/close-core";
 import { ennichiDrawSecrets, ennichiPayDeps, ennichiState } from "../ennichi/deps";
-import { ENNICHI_TAG } from "../ennichi/tag";
+import { ENNICHI_TAG, forgetEnnichiView } from "../ennichi/tag";
 import { writeAdminLog } from "../admin/log";
 import { publishReferralAnnouncement } from "../discord/referral-announce";
 import { lotInputSchema } from "@/lib/economy/lots";
@@ -296,6 +296,7 @@ export async function drawEnnichiAction(
     if (state.rules.edition !== parsed.data.edition) return { ok: false, error: "STALE" };
     const out = await drawEnnichiWith(prisma, { staffId: user.id, rules: state.rules, now, ...(await ennichiDrawSecrets()) });
     // Les pages de la fête passent tout de suite aux résultats
+    forgetEnnichiView();
     updateTag(ENNICHI_TAG);
     // Le tirage est fait et figé : un versement qui échoue ensuite ne doit pas répondre « indisponible » à l'équipe.
     // Les prix restants partent au prochain passage du cron (left le dit)

@@ -58,7 +58,7 @@ import { forgetSettings, SETTINGS_TAG } from "../settings";
 import { writeAdminLog } from "../admin/log";
 import { getRarities } from "../catalog/rarities";
 import { resolveNewsVisuals } from "../home/news";
-import { ENNICHI_TAG } from "../ennichi/tag";
+import { ENNICHI_TAG, forgetEnnichiView } from "../ennichi/tag";
 import { isRewardableKind } from "@/lib/boosters/types";
 
 // Réglages de jeu depuis /admin. Ordre : rôle admin vérifié → Zod par clé → rate limit.
@@ -363,7 +363,10 @@ export async function updateEnnichiSettings(input: unknown): Promise<UpdateSetti
     if (!ennichiTiersReady(v)) return { ok: false, error: "INVALID" };
   }
   const result = await saveSettings(ENNICHI_FORM_KEYS, ennichiSettingsSchema, input, { editor: referralStaff, holds: ennichiTiersReady });
-  if (result.ok && result.changed.length > 0) updateTag(ENNICHI_TAG);
+  if (result.ok && result.changed.length > 0) {
+    forgetEnnichiView();
+    updateTag(ENNICHI_TAG);
+  }
   return result;
 }
 

@@ -1,5 +1,5 @@
 import "server-only";
-import { ablyRest as rest, publishSafely, publishToUser, userChannel } from "../realtime";
+import { ablyRest as rest, publishOn, publishSafely, publishToUser, userChannel } from "../realtime";
 import type { BattleUpdate } from "./battle-core";
 
 // Temps réel du combat (Ably). Le serveur publie après chaque transaction validée, jamais dedans ;
@@ -20,7 +20,7 @@ export function toMessage(u: BattleUpdate): BattleMessage {
 export async function publishBattle(update: BattleUpdate) {
   if (!rest) return;
   const ably = rest;
-  await publishSafely("combat", () => ably.channels.get(battleChannel(update.battleId)).publish("update", toMessage(update)));
+  await publishSafely("combat", () => publishOn(ably, battleChannel(update.battleId), "update", toMessage(update)));
 }
 
 /** Prévient un joueur en file qu'un adversaire l'a trouvé. */

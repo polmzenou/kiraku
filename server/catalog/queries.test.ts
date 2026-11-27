@@ -1,9 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { parseWikiParams, WIKI_SORTS } from "@/lib/catalog/wiki-params";
 
-const mocks = vi.hoisted(() => ({ cards: vi.fn(), series: vi.fn(), version: vi.fn() }));
+const mocks = vi.hoisted(() => ({ cards: vi.fn(), series: vi.fn(), version: vi.fn(), cached: vi.fn() }));
 vi.mock("server-only", () => ({}));
-vi.mock("next/cache", () => ({ unstable_cache: (fn: unknown) => fn }));
+// Chaque passage par le cache de Next est noté avec sa clé
+vi.mock("next/cache", () => ({
+  unstable_cache: (fn: (...args: unknown[]) => unknown, keys: string[]) => (...args: unknown[]) => {
+    mocks.cached(keys[0]);
+    return fn(...args);
+  },
+}));
 vi.mock("../db", () => ({
   prisma: {
     card: { findMany: mocks.cards },
@@ -13,7 +19,7 @@ vi.mock("../db", () => ({
   },
 }));
 
-import { getCatalogFilterOptions, getCatalogSearchIndex } from "./queries";
+import { getCatalogFilterOptions, getCatalogSearchIndex, getCatalogSummaries } from "./queries";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -75,5 +81,20 @@ describe("filtres et tri publics du wiki", () => {
     });
     expect((await getCatalogFilterOptions("en")).series[0]).toEqual({ id: "z", title: "Alpha", cards: 2 });
     expect(mocks.series).toHaveBeenCalledWith(expect.objectContaining({ where: { cards: { some: { status: "PUBLISHED" } } } }));
+  });
+});
+
+describe("fiches résumées d'une page du wiki", () => {
+  it("page commune par le cache, page tirée d'une collection sans lui, dans l'ordre demandé", async () => {
+    mocks.cards.mockResolvedValue([{ publicId: 3, anilistId: 30, name: "C" }, { publicId: 7, anilistId: null, name: "G" }]);
+    const shared = await getCatalogSummaries([7, 3, 7]);
+    expect(mocks.cached).toHaveBeenCalledWith("catalog-summaries");
+    expect(shared.map((c) => [c.anilistId, c.sourceAnilistId])).toEqual([[7, null], [3, 30], [7, null]]);
+
+    mocks.cached.mockClear();
+    const personal = await getCatalogSummaries([7, 3], { shared: false });
+    expect(mocks.cached).not.toHaveBeenCalledWith("catalog-summaries");
+    expect(mocks.cards).toHaveBeenLastCalledWith(expect.objectContaining({ where: { publicId: { in: [3, 7] }, status: { not: "DRAFT" } } }));
+    expect(personal.map((c) => c.name)).toEqual(["G", "C"]);
   });
 });

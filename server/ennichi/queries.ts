@@ -1,9 +1,9 @@
 import "server-only";
-import { unstable_cache } from "next/cache";
 import { mergeLots } from "@/lib/economy/lot-merge";
 import { awardState, type AwardState } from "@/lib/ennichi/awards";
 import { foldPool, type UnfoldedPrize } from "@/lib/ennichi/omikuji";
 import { lastPaidRank, nextTierIndex, rankRecruiters, tierKanji, type EnnichiPhase, type EnnichiRank, type EnnichiTitle } from "@/lib/ennichi/rules";
+import { minuteMemo } from "@/lib/ennichi/view-memo";
 import { SETTING_SCHEMAS } from "@/lib/settings/defaults";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "../db";
@@ -11,11 +11,11 @@ import { lotViews, type LotLine, type LotView } from "../economy/lot-view";
 import { recruitersWith, ticketCountWith } from "./close-core";
 import { ennichiState } from "./deps";
 import { lanternCountsWith } from "./lanterns-core";
-import { ENNICHI_TAG } from "./tag";
+import { ennichiViewVersion } from "./tag";
 
 // Lectures des écrans de l'Ennichi (étape 18d). La vue publique (rue, paliers, rangs, cagnotte) est la même pour tous :
-// en cache une minute (tag ENNICHI_TAG) ; la part du joueur est lue à chaque fois. La graine du tirage n'est lue
-// qu'après le tirage (vérification) : avant, seule son empreinte sort d'ici. Après le tirage, rangs et cagnotte sont
+// gardée une minute en mémoire du processus (relue après un réglage ou le tirage) ; la part du joueur est lue à chaque
+// fois. La graine du tirage n'est lue qu'après le tirage (vérification) : avant, seule son empreinte sort d'ici. Après le tirage, rangs et cagnotte sont
 // ceux figés par le tirage (EnnichiDraw.ranks et prizes), pas les réglages du moment.
 
 export type TierView = { index: number; kanji: string; lanterns: number; lot: LotView | null; choiceVouchers: number; reachedAt: string | null; served: number };
@@ -130,11 +130,13 @@ async function buildView(locale: string, nowMs: number): Promise<EnnichiView> {
   };
 }
 
-const cachedView = unstable_cache((locale: string, minute: number) => buildView(locale, minute * 60_000), ["ennichi-view"], { tags: [ENNICHI_TAG], revalidate: 60 });
+// En mémoire du processus, une entrée par langue (fr, en) remplacée à chaque minute, plutôt que dans le cache de Next :
+// une clé par minute y laissait 2 880 entrées et fichiers par jour (lib/ennichi/view-memo.ts)
+const memoView = minuteMemo(buildView);
 
-/** Vue publique de la fête, la même pour tous (relue au plus une fois par minute). */
+/** Vue publique de la fête, la même pour tous (relue au plus une fois par minute, et après un réglage ou le tirage). */
 export function ennichiView(locale: string, now = new Date()): Promise<EnnichiView> {
-  return cachedView(locale, Math.floor(now.getTime() / 60_000));
+  return memoView(locale, now.getTime(), ennichiViewVersion());
 }
 
 /** La même vue relue à l'instant, sans cache : suivi de l'équipe dans l'admin. */
