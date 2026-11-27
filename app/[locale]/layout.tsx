@@ -15,10 +15,11 @@ import { routing } from "@/i18n/routing";
 import { pickClientMessages } from "@/i18n/client-messages";
 import { parseTheme, THEME_COLORS, THEME_COOKIE } from "@/lib/theme";
 import { MAIN_CONTENT_ID } from "@/lib/nav";
-import { parseSpoilerMode, SPOILER_COOKIE } from "@/lib/spoiler";
+import { spoilerPrefsOf } from "@/lib/spoiler";
 import { MOTION_COOKIE, parseMotionPref } from "@/lib/motion-pref";
 import { NAV_LAYOUT_COOKIE, parseNavLayout } from "@/lib/nav-layout";
 import { MotionPreferenceProvider } from "@/components/motion/MotionPreference";
+import { SpoilerPreferenceProvider } from "@/components/spoiler/SpoilerPreference";
 import { RealtimeRoot } from "@/components/realtime/RealtimeRoot";
 import { fontVariables } from "../fonts";
 import { appUrl } from "@/server/env";
@@ -67,23 +68,27 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   const jar = await cookies();
   const theme = parseTheme(jar.get(THEME_COOKIE)?.value);
   const motion = parseMotionPref(jar.get(MOTION_COOKIE)?.value);
-  const spoiler = parseSpoilerMode(jar.get(SPOILER_COOKIE)?.value);
   const navLayout = parseNavLayout(jar.get(NAV_LAYOUT_COOKIE)?.value);
   const clientMessages = pickClientMessages(await getMessages());
   // Code de parrain du joueur connecté, ajouté aux liens qu'il partage (lu une fois par requête, comme l'en-tête)
   const user = await getCurrentUser();
   const shareCode = shareCodeOf(user);
-  const nonce = adsEnabled() ? ((await headers()).get("x-nonce") ?? undefined) : undefined;
+  // Mode spoiler du compte : tout flouté par défaut (et sans compte), sauf les univers remis en clair par le joueur
+  const spoiler = spoilerPrefsOf(user);
+  // Nonce de la CSP (proxy.ts) : la feuille des univers en clair du mode spoiler, et le script AdSense quand il est actif
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const adsNonce = adsEnabled() ? nonce : undefined;
 
   return (
-    <html lang={locale} data-theme={theme} data-motion={motion === "reduced" ? "reduced" : undefined} data-fx={motion === "lite" ? "lite" : undefined} data-spoiler={spoiler === "hide" ? "hide" : undefined} data-nav={navLayout === "rail" ? "rail" : undefined} className={fontVariables}>
+    <html lang={locale} data-theme={theme} data-motion={motion === "reduced" ? "reduced" : undefined} data-fx={motion === "lite" ? "lite" : undefined} data-spoiler={spoiler.blur ? "hide" : undefined} data-nav={navLayout === "rail" ? "rail" : undefined} className={fontVariables}>
       {/* Barre latérale (data-nav="rail", ≥ 1024 px) : le contenu et l'en-tête se décalent de sa largeur */}
       <body className="min-h-dvh lg:nav-rail:pl-24">
         <NextIntlClientProvider messages={clientMessages}>
           <ShareCodeProvider code={shareCode}>
           <MotionPreferenceProvider initial={motion}>
+          <SpoilerPreferenceProvider initial={spoiler} canSave={user !== null} nonce={nonce}>
             <RealtimeRoot>
-              <AppHeader theme={theme} spoiler={spoiler} />
+              <AppHeader theme={theme} />
               {/* Cible du lien d'évitement de l'en-tête, décalée de la hauteur de l'en-tête collant */}
               <div id={MAIN_CONTENT_ID} className="scroll-mt-[calc(4rem+env(safe-area-inset-top))]">
                 <AccountGate>
@@ -96,13 +101,14 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
             <ServiceWorkerRegister />
             {/* Cookie de session prolongé à l'usage (un composant serveur ne peut pas le réécrire) */}
             {user && <SessionRefresh />}
+          </SpoilerPreferenceProvider>
           </MotionPreferenceProvider>
           </ShareCodeProvider>
         </NextIntlClientProvider>
         {/* Mesure des performances (LCP, INP, CLS) sans cookie ni identifiant : exemptée de consentement */}
         {process.env.VERCEL === "1" && <SpeedInsights />}
         {/* AdSense (ADS_ENABLED=1) : charge aussi le message de consentement configuré dans AdSense */}
-        {nonce && <script async src={ADSENSE_SCRIPT_URL} crossOrigin="anonymous" nonce={nonce} />}
+        {adsNonce && <script async src={ADSENSE_SCRIPT_URL} crossOrigin="anonymous" nonce={adsNonce} />}
       </body>
     </html>
   );

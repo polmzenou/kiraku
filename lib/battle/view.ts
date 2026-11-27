@@ -104,6 +104,8 @@ export type CandidateCard = {
   universe: UniverseRef;
   /** Illustration floutée en mode spoiler. */
   spoiler: boolean;
+  /** Clé d'univers d'une carte spoil (`universe.key`) : le joueur peut la remettre en clair (lib/spoiler.ts). */
+  spoilerKey?: string | null;
 };
 
 /**

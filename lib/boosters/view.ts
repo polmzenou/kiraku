@@ -1,4 +1,5 @@
 import type { FudaCard } from "@/components/fuda/Fuda";
+import type { FrescoDropView } from "../fresco/view";
 import type { ApocalypseOutcome, SealedKind } from "./draw";
 import type { BoosterShape, BoosterTheme } from "./types";
 
@@ -30,6 +31,8 @@ export type OpenedBoosterView = {
   featuredPityTriggered: boolean;
   zeniSpent: number;
   cards: OpenedCardView[];
+  /** Fragment de fresque glissé dans ce booster (absent sans fragment). */
+  fresco?: FrescoDropView<OpenedCardView> | null;
 };
 
 /** Sachet scellé tombé pendant une ouverture, à sa place dans la série (position du booster). */

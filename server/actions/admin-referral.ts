@@ -15,6 +15,7 @@ import { setVanityCodeWith, VanityError, vanityStatusWith, type VanityErrorCode 
 import { pushLater } from "../market/queries";
 import { previewRevokeWith, ReviewError, revokeReferralWith, validateReferralWith, type ReviewErrorCode } from "../referral/review-core";
 import { getSetting } from "../settings";
+import { refreshLeaderboardsAfterBan } from "../social/ban-caches";
 import { checkEnnichiWith, drawEnnichiWith, EnnichiCloseError, payAwardsWith, type EnnichiCloseErrorCode } from "../ennichi/close-core";
 import { ennichiDrawSecrets, ennichiPayDeps, ennichiState } from "../ennichi/deps";
 import { ENNICHI_TAG, forgetEnnichiView } from "../ennichi/tag";
@@ -93,6 +94,7 @@ export async function reviewReferralAction(input: unknown): Promise<{ ok: true; 
       sharedIpCap: await getSetting("multiAccount.sharedIpCap"),
       ipv4BanDays: await getSetting("multiAccount.ipv4BanDays"),
     });
+    if (banned.length > 0) refreshLeaderboardsAfterBan();
     refresh();
     return { ok: true, paid: 0, banned: banned.length };
   } catch (e) {

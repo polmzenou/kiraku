@@ -164,7 +164,7 @@ export async function CardDetail({
                           {prestige.enabled && !isGuest && c.status === "COLLECTION" && canConsecrate(c, prestige) && (
                             <ConsecrateButton
                               userCardId={c.id}
-                              card={{ name: card.name, nameNative: card.nameNative, imageUrl: card.imageUrl, rank: card.rank, rarity: card.rarity, power: card.power, ki: card.ki, appearance: card.appearance, formName: card.formName, spoiler: card.spoiler, copy }}
+                              card={{ name: card.name, nameNative: card.nameNative, imageUrl: card.imageUrl, rank: card.rank, rarity: card.rarity, power: card.power, ki: card.ki, appearance: card.appearance, formName: card.formName, spoiler: card.spoiler, spoilerKey: card.spoilerKey, copy }}
                               username={username}
                             />
                           )}

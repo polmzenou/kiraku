@@ -2,6 +2,7 @@
 // (server/market/listing-core.ts). « Je donne celle-ci contre l'une de celles-là » : n'importe quel
 // joueur propose une de ses cartes, l'auteur de l'annonce accepte ou refuse.
 import type { Rarity } from "../catalog/rarity";
+import { parsePossession, type Possession } from "./possession";
 import { accountAgeMs, type Trader } from "./rules";
 
 export type ListingRules = {
@@ -30,7 +31,8 @@ export function checkExchanger(player: Trader, now: Date, rules: Pick<ListingRul
   return null;
 }
 
-export const LISTING_FILTERS = ["all", "missing", "canAccept", "mine"] as const;
+/** Filtres de liste ; l'acquisition (acquises, non acquises) est un filtre à part qui s'y ajoute. */
+export const LISTING_FILTERS = ["all", "canAccept", "mine"] as const;
 export type ListingFilter = (typeof LISTING_FILTERS)[number];
 
 export type TradeListingRefusal =
@@ -119,4 +121,14 @@ export function isListingOpen(listing: { status: string; expiresAt: Date }, now:
 export function parseListingFilter(value: string | string[] | undefined): ListingFilter {
   const v = Array.isArray(value) ? value[0] : value;
   return v && (LISTING_FILTERS as readonly string[]).includes(v) ? (v as ListingFilter) : "all";
+}
+
+/**
+ * Filtre d'acquisition de la liste (`possession`). Un ancien lien `filtre=missing` (« Que je n'ai pas »,
+ * avant que l'acquisition ne devienne un filtre à part) vaut « non acquises ».
+ */
+export function parseListingPossession(filtre: string | string[] | undefined, possession: string | string[] | undefined): Possession {
+  const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+  const parsed = parsePossession(first(possession));
+  return parsed === "all" && first(filtre) === "missing" ? "missing" : parsed;
 }

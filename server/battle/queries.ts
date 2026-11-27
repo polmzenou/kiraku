@@ -242,6 +242,7 @@ const MAX_CANDIDATES = 500;
 function candidateFrom(row: CandidateRow, rules: BattleRules, kit?: Kit): CandidateCard {
   return {
     ...row,
+    spoilerKey: row.spoiler ? row.universe.key : null,
     hp: combatStats(row.power, row.ki, rules.stats).hp,
     keywords: kit ? [...kit.keywords] : keywordsFor(row.anilistId, row.rarity, rules.keywordsByRarity, rules.newAbilityPct),
     technique: kit ? kit.technique : techniqueFor(row.anilistId, rules.newAbilityPct),

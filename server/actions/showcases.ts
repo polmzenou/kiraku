@@ -23,6 +23,7 @@ import {
   removeShowcaseCardWith,
   reorderShowcasesWith,
   setShowcaseCardsWith,
+  setShowcaseFrescoWith,
   ShowcaseError,
   storedLayout,
   updateShowcaseWith,
@@ -150,6 +151,21 @@ export async function updateShowcaseAction(input: unknown): Promise<SlotsResult>
     const slots = await updateShowcaseWith(prisma, g.userId, showcaseId, { name, layout, theme });
     refresh();
     return { ok: true, slots };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+const frescoSchema = z.object({ showcaseId: idSchema, frescoId: idSchema.nullable(), first: z.boolean() }).strict();
+
+/** Fresque mise en avant dans la vitrine (mini-navigation « Cartes · Fresque »), ou aucune. */
+export async function setShowcaseFrescoAction(input: unknown): Promise<{ ok: true } | Failure> {
+  const g = await guard(input, frescoSchema, "structure");
+  if ("error" in g) return { ok: false, error: g.error ?? "INVALID" };
+  try {
+    await setShowcaseFrescoWith(prisma, g.userId, g.data);
+    refresh();
+    return { ok: true };
   } catch (e) {
     return failure(e);
   }

@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ admin: vi.fn(), rateLimit: vi.fn(), merge: vi.fn(), remove: vi.fn(), create: vi.fn(), rename: vi.fn(), refresh: vi.fn() }));
-vi.mock("next/cache", () => ({ refresh: mocks.refresh }));
+vi.mock("next/cache", () => ({ refresh: mocks.refresh, updateTag: vi.fn() }));
+vi.mock("../catalog/queries", () => ({ CATALOG_TAG: "catalog" }));
 vi.mock("../admin", () => ({ getAdmin: mocks.admin }));
 vi.mock("../ratelimit", () => ({ rateLimit: mocks.rateLimit }));
 vi.mock("../db", () => ({ prisma: {} }));

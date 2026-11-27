@@ -20,6 +20,11 @@ import { loadProfile } from "@/server/collection/profile-page";
 import { ownedCardIds } from "@/server/collection/owned";
 import { getSetting } from "@/server/settings";
 import { getShowcaseCards, listShowcases } from "@/server/showcase/queries";
+import { hasPublishedFresco, playerFrescoes, showcaseFresco } from "@/server/fresco/queries";
+import { FrescoPlate } from "@/components/fresco/FrescoPlate";
+import { FrescoStage } from "@/components/fresco/FrescoStage";
+import { ShowcaseViewSwitch } from "@/components/showcase/ShowcaseViewSwitch";
+import { frescoProgress } from "@/lib/fresco/view";
 import { referralPreview } from "@/server/referral/preview";
 import { getCurrentUser } from "@/server/user";
 
@@ -63,11 +68,21 @@ export default async function ShowcasePage({ params, searchParams }: PageProps<"
   // Seule la vitrine principale (la première) est publique ; les autres n'existent que pour leur propriétaire
   if (index < 0 || (index !== 0 && !access.isOwner)) notFound();
   const current = showcases[index];
-  const [t, tAccount, cards] = await Promise.all([
+  const [t, tAccount, tFresco, cards, fresco, frescoOn] = await Promise.all([
     getTranslations("showcase"),
     getTranslations("account"),
+    getTranslations("fresco"),
     getShowcaseCards(current.id, owner.id, current.layout, locale),
+    // Fragments du propriétaire seulement ; l'image entière une fois la fresque complète
+    showcaseFresco(owner.id, current, locale),
+    hasPublishedFresco(),
   ]);
+  // Choix de la fresque (propriétaire) : rien tant qu'aucune fresque n'est publiée
+  const frescoChoices = access.isOwner && frescoOn ? await playerFrescoes(owner.id, locale) : null;
+  const frescoLabel = (view: NonNullable<typeof fresco>["view"]) => {
+    const { owned, total, complete } = frescoProgress(view);
+    return complete ? tFresco("labelComplete", { name: view.name }) : tFresco("label", { name: view.name, owned, total });
+  };
   const ownerName = displayName(owner.username, owner.isGuest, (code) => tAccount("guestName", { code }));
   const nameOf = (i: number) => showcases[i].name ?? t("untitled", { n: i + 1 });
   const theme = effectiveTheme(current.theme, setting);
@@ -118,6 +133,9 @@ export default async function ShowcasePage({ params, searchParams }: PageProps<"
           showcaseIds={showcases.map((s) => s.id)}
           isMain={index === 0}
           startEditing={query.modifier === "1"}
+          fresco={fresco?.view ?? null}
+          frescoFirst={fresco?.first ?? false}
+          frescoChoices={frescoChoices}
         />
       ) : (
         <div className="flex flex-col gap-4">
@@ -129,7 +147,34 @@ export default async function ShowcasePage({ params, searchParams }: PageProps<"
             actions={<ShareProfileButton username={owner.username} title={t("of", { name: ownerName })} path={`/u/${owner.username}/vitrines/${current.id}`} label={t("share")} />}
           />
           {social}
-          {current.count > 0 ? (
+          {fresco ? (
+            // Vitrine avec fresque : mini-navigation « Cartes · Fresque », même décor pour les deux vues
+            <ShowcaseViewSwitch
+              title={<span />}
+              initial={fresco.first ? "fresco" : "cards"}
+              cards={
+                <>
+                  <ShowcaseView
+                    name={nameOf(index)}
+                    layout={current.layout}
+                    theme={theme}
+                    cards={cards}
+                    owned={owned}
+                    linkBase="/wiki"
+                    isOwner={false}
+                    preload={!fresco.first}
+                  />
+                  {current.count > 0 && <VisitorShowcaseBar viewerId={viewer?.id ?? null} cardIds={cardIds} owned={owned} />}
+                </>
+              }
+              fresco={
+                <>
+                  <FrescoStage fresco={fresco.view} theme={theme} label={frescoLabel(fresco.view)} preload={fresco.first} />
+                  <FrescoPlate fresco={fresco.view} />
+                </>
+              }
+            />
+          ) : current.count > 0 ? (
             <>
               <ShowcaseView
                 name={nameOf(index)}

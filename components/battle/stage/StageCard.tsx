@@ -50,7 +50,10 @@ export const StageCard = memo(function StageCard({ slot, card, state, atkBonus, 
 
   // La face ne dépend que de la carte : gardée d'un rendu à l'autre, elle n'est pas recalculée à chaque coup
   // (parties lancées avant le mode spoiler : pas de champ, pas de flou)
-  const art = useMemo(() => <Fuda card={{ ...card, spoiler: card.spoiler === true }} size="sm" variant="battle" tilt={false} sizes={sizes} />, [card, sizes]);
+  const art = useMemo(
+    () => <Fuda card={{ ...card, spoiler: card.spoiler === true, spoilerKey: card.universe?.key }} size="sm" variant="battle" tilt={false} sizes={sizes} />,
+    [card, sizes],
+  );
 
   const dead = state.hp <= 0;
   const hp = Math.max(0, Math.min(1, state.hp / Math.max(1, state.maxHp)));

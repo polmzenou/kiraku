@@ -1,5 +1,6 @@
 // Précontrôle sans affichage de secrets, avant toute migration ou construction (VPS ou Vercel).
-import { config } from "dotenv";
+import { existsSync, readFileSync } from "node:fs";
+import { config, parse } from "dotenv";
 config({ path: [".env.local", ".env"], quiet: true });
 
 const env = process.env;
@@ -71,6 +72,14 @@ if (production) {
   for (const key of ["AUTH_DISCORD_ID", "ADMIN_DISCORD_ID", "RESEND_API_KEY", "ABLY_API_KEY", "VAPID_PUBLIC_KEY"]) {
     if (!present(key)) warnings.push(`${key} absente : vérifier le service correspondant dans la checklist`);
   }
+  // Expéditeur de test de Resend : il ne livre qu'au propriétaire du compte Resend, aucun joueur ne reçoit ses liens
+  if (/@resend\.dev>?\s*$/i.test(env.MAIL_FROM ?? "")) warnings.push("MAIL_FROM : adresse de test @resend.dev, les joueurs ne reçoivent aucun e-mail (vérifier le domaine chez Resend)");
+  // La release standalone (deploy/deploy.sh) n'embarque que .env et .env.production : une clé posée seulement dans
+  // .env.local est vue par ce contrôle et par le build, mais pas par le serveur en ligne. Noms seulement, jamais les valeurs.
+  const fileKeys = (file) => (existsSync(file) ? Object.keys(parse(readFileSync(file))) : []);
+  const shipped = new Set([...fileKeys(".env"), ...fileKeys(".env.production")]);
+  const localOnly = fileKeys(".env.local").filter((key) => !shipped.has(key));
+  if (localOnly.length) warnings.push(`clés seulement dans .env.local, absentes du serveur en ligne : ${localOnly.join(", ")} (les déplacer dans .env)`);
 }
 for (const warning of warnings) console.warn(`⚠ ${warning}`);
 for (const error of errors) console.error(`✖ ${error}`);

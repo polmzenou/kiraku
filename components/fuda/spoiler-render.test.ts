@@ -29,6 +29,14 @@ describe("mode spoiler sur la fuda", () => {
     expect(html).toContain("Puissance 90");
   });
 
+  it("porte la clé d'univers sur la fuda, pour remettre l'univers en clair", () => {
+    const key = "cmh1jjk0000000000000univ";
+    expect(render({ spoiler: true, spoilerKey: key })).toMatch(new RegExp(`<div class="fuda [^"]*"[^>]*data-spoiler-u="${key}"`));
+    // Sans clé (anciennes données) ou carte non spoil : pas d'attribut, la carte spoil reste floutée
+    expect(render({ spoiler: true })).not.toContain("data-spoiler-u");
+    expect(render({ spoiler: false, spoilerKey: key })).not.toContain("data-spoiler-u");
+  });
+
   it("ne touche pas une carte ordinaire", () => {
     const html = render();
     expect(html).not.toContain("data-spoiler");
@@ -53,5 +61,7 @@ describe("mode spoiler sur la fuda", () => {
       renderToStaticMarkup(createElement(CardThumb, { card: { ...card, cardId: "c", anilistId: 1, series: "One Piece", spoiler } }));
     expect(thumb(true)).toMatch(/<img[^>]*data-spoiler/);
     expect(thumb(false)).not.toContain("data-spoiler");
+    const keyed = renderToStaticMarkup(createElement(CardThumb, { card: { ...card, cardId: "c", anilistId: 1, series: "One Piece", spoiler: true, spoilerKey: "cmh1jjk0000000000000univ" } }));
+    expect(keyed).toMatch(/<img[^>]*data-spoiler-u="cmh1jjk0000000000000univ"/);
   });
 });

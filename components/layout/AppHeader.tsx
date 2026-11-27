@@ -5,7 +5,6 @@ import { isStaff } from "@/lib/admin/roles";
 import { MAIN_CONTENT_ID, type NavBadges } from "@/lib/nav";
 import { Link } from "@/i18n/navigation";
 import type { Theme } from "@/lib/theme";
-import type { SpoilerMode } from "@/lib/spoiler";
 import { logout } from "@/server/actions/account";
 import { isFrozen } from "@/lib/account/deletion";
 import { getBoosterRules } from "@/server/boosters/rules";
@@ -35,7 +34,7 @@ import { ZeniCoin } from "./ZeniCoin";
  * La navigation mobile est rendue à côté pour ne pas piéger son `fixed` dans le backdrop-filter.
  * Le stock est calculé ici, côté serveur ; le client n'affiche que le compte à rebours.
  */
-export async function AppHeader({ theme, spoiler }: { theme: Theme; spoiler: SpoilerMode }) {
+export async function AppHeader({ theme }: { theme: Theme }) {
   const [t, user, jar] = await Promise.all([getTranslations(), getCurrentUser(), cookies()]);
   const accountHref = user ? `/u/${user.username}` : "/connexion";
   // Lien « Admin » pour toute l'équipe : le DEV y trouve le catalogue seulement
@@ -174,7 +173,7 @@ export async function AppHeader({ theme, spoiler }: { theme: Theme; spoiler: Spo
           later={t("guestNotice.later")}
         />
       )}
-      <MobileMenu theme={theme} spoiler={spoiler} isAdmin={isAdmin} accountHref={accountHref} signedIn={signedIn} features={features} alerts={alerts} badges={badges} />
+      <MobileMenu theme={theme} isAdmin={isAdmin} accountHref={accountHref} signedIn={signedIn} features={features} alerts={alerts} badges={badges} />
       {chat && <ChatDock {...chat} />}
     </>
   );

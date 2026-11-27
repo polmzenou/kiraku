@@ -7,7 +7,13 @@ vi.mock("../db", () => ({ prisma: {} }));
 const { assembleNewsVisuals, readNewsVisuals } = await import("./news");
 
 const NOW = new Date("2026-11-01T12:00:00.000Z");
-const card = (id: string) => ({ id, name: id, nameNative: null, imageUrl: `https://s4.anilist.co/${id}.png`, rank: 1, rarity: "MYTHIC", power: 90, ki: 80, appearance: {}, formName: null });
+const view = (id: string, spoilerKey: string | null = null) => ({ id, name: id, nameNative: null, imageUrl: `https://s4.anilist.co/${id}.png`, rank: 1, rarity: "MYTHIC", power: 90, ki: 80, appearance: {}, formName: null, spoiler: spoilerKey !== null, spoilerKey });
+// Ligne lue en base : la série (et son univers) donne la clé du mode spoiler
+const card = (id: string, spoiler = false, universeId: string | null = null) => {
+  const { spoilerKey, ...rest } = view(id);
+  void spoilerKey;
+  return { ...rest, spoiler, seriesId: `series-${id}`, series: { universeId } };
+};
 const imperial = {
   slug: "imperial",
   name: { fr: "Impérial", en: "Imperial" },
@@ -37,6 +43,13 @@ describe("visuels des bannières Nouveautés", () => {
     expect(loaded.boosters[0].theme).toMatchObject({ base: "#1E3557", pattern: "kikko" });
   });
 
+  it("donne leur clé d'univers aux cartes spoil seulement : l'univers de la série, sinon la série", async () => {
+    const db = fakeDb([card("a"), card("s1", true, "univers-jjk"), card("s2", true)]);
+    const { cards } = await readNewsVisuals(db, ["a", "s1", "s2"], [], "fr", NOW);
+    expect(cards.map((c) => [c.id, c.spoilerKey])).toEqual([["a", null], ["s1", "univers-jjk"], ["s2", "series-s2"]]);
+    expect(cards[1]).not.toHaveProperty("series");
+  });
+
   it("ne lit rien sans carte ni booster à montrer", async () => {
     const db = fakeDb();
     expect(await readNewsVisuals(db, [], [], "fr", NOW)).toEqual({ cards: [], boosters: [] });
@@ -57,7 +70,7 @@ describe("visuels des bannières Nouveautés", () => {
       loaded,
     );
     expect(Object.keys(visuals)).toEqual(["cartes", "booster"]);
-    expect(visuals.cartes).toEqual({ kind: "cards", cards: [card("b"), card("a")] });
+    expect(visuals.cartes).toEqual({ kind: "cards", cards: [view("b"), view("a")] });
     const booster = visuals.booster;
     expect(booster.kind === "booster" && booster.booster.name).toBe("Impérial");
     expect(booster.kind === "booster" && booster.cards.map((c) => c.id)).toEqual(["f1", "f2"]);

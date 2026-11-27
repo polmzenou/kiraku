@@ -7,6 +7,7 @@ import { isFrozen } from "@/lib/account/deletion";
 import type { OpenedCardView } from "@/lib/boosters/view";
 import { SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
 import { LISTING_FILTERS, type ListingRules } from "@/lib/market/listings";
+import { POSSESSIONS } from "@/lib/market/possession";
 import { noteSchema } from "@/lib/text/note-schema";
 import { z } from "@/lib/zod";
 import { cardViews } from "../boosters/display";
@@ -49,7 +50,7 @@ const offerIdSchema = z.object({ offerId: id }).strict();
 const declineSchema = z.object({ offerId: id, note: noteSchema }).strict();
 const seenSchema = z.object({ offerIds: z.array(id).min(1).max(50) }).strict();
 const pageSchema = z
-  .object({ q: z.string().max(SEARCH_MAX_LENGTH), filter: z.enum(LISTING_FILTERS), cursor: id.nullable() })
+  .object({ q: z.string().max(SEARCH_MAX_LENGTH), filter: z.enum(LISTING_FILTERS), possession: z.enum(POSSESSIONS), cursor: id.nullable() })
   .strict();
 const wantableSchema = z.object({ q: z.string().max(SEARCH_MAX_LENGTH), offset: z.number().int().min(0).max(100_000) }).strict();
 

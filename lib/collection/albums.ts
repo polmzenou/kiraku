@@ -28,6 +28,8 @@ export type Album = {
   cover: string | null;
   /** La carte de couverture est spoil : illustration floutée en mode spoiler. */
   coverSpoiler: boolean;
+  /** Clé d'univers de la série (lib/spoiler.ts) quand la couverture est spoil : le joueur peut la remettre en clair. */
+  coverSpoilerKey: string | null;
   owned: number;
   total: number;
   byRarity: AlbumProgress;

@@ -2,16 +2,18 @@ import { getTranslations } from "next-intl/server";
 import { GeneralSettingsForm } from "@/components/admin/GeneralSettingsForm";
 import { SettingLogList } from "@/components/admin/SettingLogList";
 import { HostUsage } from "@/components/admin/HostUsage";
+import { MailStatus } from "@/components/admin/MailStatus";
 import { UsageSettingsForm } from "@/components/admin/UsageSettingsForm";
 import { GENERAL_SETTING_KEYS, type GeneralSettings } from "@/lib/settings/general-form";
 import { USAGE_SETTING_KEYS, type UsageSettings } from "@/lib/settings/usage-form";
 import { recentSettingLogs, requireAdmin } from "@/server/admin";
 import { hostSnapshot } from "@/server/admin/host-usage";
+import { env, mailEnabled } from "@/server/env";
 import { getSetting } from "@/server/settings";
 
-/** Réglages généraux sans module propre, et consommation du serveur (VPS). */
+/** Réglages généraux sans module propre, envoi des e-mails et consommation du serveur (VPS). */
 export default async function AdminGeneralPage() {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const [t, values, usageValues, logs, snapshot] = await Promise.all([
     getTranslations("admin.general"),
     Promise.all(GENERAL_SETTING_KEYS.map((k) => getSetting(k))),
@@ -29,6 +31,7 @@ export default async function AdminGeneralPage() {
         <p className="max-w-prose text-sm text-text-muted">{t("intro")}</p>
       </div>
       <GeneralSettingsForm initial={settings} />
+      <MailStatus configured={mailEnabled} from={env.MAIL_FROM ?? null} defaultTo={admin.email ?? ""} />
       <HostUsage snapshot={snapshot} thresholds={usage["usage.alertThresholds"]} />
       <UsageSettingsForm initial={usage} />
       <SettingLogList logs={logs} />

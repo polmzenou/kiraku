@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, domMax, LazyMotion, m } from "motion/react";
+import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { preload } from "react-dom";
@@ -36,6 +37,10 @@ import { SoundToggle } from "./SoundToggle";
 import { useRitualFx } from "./useRitualFx";
 import { useFxLevel, useMotionPreference } from "@/components/motion/MotionPreference";
 import { hasMeasuredTier, probeFrames, watchFrames } from "@/components/motion/fx-tier";
+import { FrescoRecap } from "./FrescoRecap";
+
+// Révélation des fragments de fresque : chargée seulement quand un fragment tombe
+const FrescoFragmentReveal = dynamic(() => import("./FrescoFragmentReveal").then((mod) => mod.FrescoFragmentReveal), { ssr: false });
 
 /** transform : le booster s'est changé en sachet scellé ; omen : le sceau d'un Apocalyptique se fend. */
 type Stage = "ready" | "opening" | "transform" | "omen" | "reveal" | "recap";
@@ -164,6 +169,10 @@ export function OpeningStage({
   const [karma, setKarma] = useState(initialKarma.current);
   const [outcome, setOutcome] = useState<ApocalypseOutcome | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Fragments de fresque : révélés une fois après les cartes de chaque ouverture, puis « Revoir » depuis le récap
+  const [frescoSeenFor, setFrescoSeenFor] = useState<OpenedBoosterView[] | null>(null);
+  const [frescoReplay, setFrescoReplay] = useState<number | null>(null);
+  const fragments = useMemo(() => boosters?.flatMap((b) => (b.fresco ? [b.fresco] : [])) ?? [], [boosters]);
   const dropsRef = useRef<DroppedSealedView[]>([]);
   const omenRef = useRef<ApocalypseOutcome | null>(null);
   const transformSeen = useRef(false);
@@ -643,6 +652,7 @@ export function OpeningStage({
 
           {stage === "recap" && boosters && (
             <m.div key="recap" ref={landing} className="w-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              {fragments.length > 0 && <FrescoRecap drops={fragments} onReplay={setFrescoReplay} />}
               {drops.length > 0 && (
                 <section aria-labelledby="recap-sealed" className="mx-auto mb-6 flex w-full max-w-md flex-col gap-2 rounded-card border border-kin bg-surface p-4">
                   <h2 id="recap-sealed" tabIndex={-1} className="flex items-center gap-2 font-title text-lg font-bold">
@@ -725,6 +735,17 @@ export function OpeningStage({
       {variant === "golden" && ritual && !reduced && <GoldenDust key={`dust-${attempt}`} lite={lite} />}
       {prismOn && ritual && !reduced && !lite && <PrismWash key={`prism-${attempt}`} />}
       {stage === "omen" && outcome && <ApocalypseOmen key={`omen-${attempt}`} outcome={outcome} lite={lite} reduced={reduced} onDone={omenDone} />}
+      {stage === "recap" && fragments.length > 0 && (frescoSeenFor !== boosters || frescoReplay !== null) && (
+        <FrescoFragmentReveal
+          key={`fresco-${attempt}-${frescoReplay ?? "first"}`}
+          drops={fragments}
+          start={frescoReplay ?? 0}
+          onDone={() => {
+            setFrescoSeenFor(boosters);
+            setFrescoReplay(null);
+          }}
+        />
+      )}
       {stage === "recap" && boosters && (
         <RecapActionBar
           count={sealedOpen ? 1 : effectiveCount}

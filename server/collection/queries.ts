@@ -29,6 +29,7 @@ type Row = {
   power: number;
   ki: number;
   spoiler: boolean;
+  spoilerKey: string | null;
   titleRomaji: string;
   titleEnglish: string | null;
   copies: number;
@@ -98,6 +99,7 @@ function toItem(row: Row, locale: string): CollectionItem {
     power: row.power,
     ki: row.ki,
     spoiler: row.spoiler,
+    spoilerKey: row.spoilerKey,
     series: seriesTitle(row, locale),
     copies: row.copies,
     free: row.free,
@@ -129,6 +131,8 @@ export async function getCollectionPage(
   const rows = await prisma.$queryRaw<Row[]>`
     SELECT c.id AS "cardId", c."publicId" AS "anilistId", c.appearance, c.name, c."nameNative", c."imageUrl", c.rank, c."rarityKey" AS rarity,
            c.power, c.ki, c.spoiler, s."titleRomaji", s."titleEnglish",
+           -- Clé d'univers d'une carte spoil (mode spoiler) : univers de la série, sinon la série seule
+           CASE WHEN c.spoiler THEN COALESCE(s."universeId", s.id) END AS "spoilerKey",
            COUNT(*)::int AS copies,
            (COUNT(*) FILTER (WHERE uc.status = 'COLLECTION'))::int AS free,
            (COUNT(*) FILTER (WHERE uc.status = 'COLLECTION' AND uc.heritage = 0 AND uc.printing IS NULL))::int AS ordinary,

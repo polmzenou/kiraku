@@ -48,6 +48,8 @@ const nextConfig: NextConfig = {
             { protocol: "https" as const, hostname: process.env.BLOB_PUBLIC_HOST, pathname: "/cards/**" },
             // Bannières Nouveautés téléversées depuis /admin/nouveautes
             { protocol: "https" as const, hostname: process.env.BLOB_PUBLIC_HOST, pathname: "/news/**" },
+            // Fresques découpées depuis /admin/fresques (noms aléatoires)
+            { protocol: "https" as const, hostname: process.env.BLOB_PUBLIC_HOST, pathname: "/frescoes/**" },
           ]
         : []),
     ],

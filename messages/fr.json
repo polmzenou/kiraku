@@ -132,10 +132,12 @@
     "until": "Jusqu'au {date}",
     "openBooster": "Ouvrir le booster",
     "seeNewCards": "Voir les nouvelles cartes",
+    "seeNewFrescoes": "Voir les nouvelles fresques",
     "tags": {
       "NEW": "Nouveau",
       "NEW_CARDS": "Nouvelles cartes",
       "NEW_BOOSTER": "Nouveau booster",
+      "NEW_FRESCO": "Nouvelle fresque",
       "EVENT": "Événement",
       "UPDATE": "Mise à jour",
       "SOON": "Bientôt"
@@ -191,7 +193,32 @@
     "label": "Mode spoiler",
     "show": "Tout afficher",
     "hide": "Flouter les spoils",
-    "hint": "Floute l'illustration des personnages et des transformations qui dévoilent l'histoire. Le nom, la rareté et les stats restent visibles."
+    "hint": "Par défaut, l'illustration des personnages et des transformations qui dévoilent l'histoire est floutée. Le nom, la rareté et les stats restent visibles. Réglage enregistré sur ton compte.",
+    "saveFailed": "Réglage non enregistré. Réessaie.",
+    "byUniverseLink": "Choisir par univers",
+    "universes": {
+      "title": "Spoilers par univers",
+      "intro": "Toutes les cartes spoil sont floutées par défaut. Décoche un univers que tu as rattrapé pour voir ses cartes en clair ; un nouvel univers arrive toujours flouté.",
+      "legend": "Univers dont les cartes spoil sont floutées",
+      "search": "Chercher un univers",
+      "summary": "{shown, plural, =0 {Tout est flouté} one {# univers en clair} other {# univers en clair}} sur {total}",
+      "reset": "Tout reflouter",
+      "cards": "{count, plural, one {# carte spoil} other {# cartes spoil}}",
+      "blurred": "flouté",
+      "shown": "en clair",
+      "switchLabel": "Flouter les cartes spoil de {name}",
+      "showAllActive": "« Tout afficher » est actif : aucune carte n'est floutée. Choisis « Flouter les spoils » pour régler univers par univers.",
+      "empty": "Aucune carte spoil pour le moment.",
+      "noMatch": "Aucun univers ne correspond.",
+      "errors": {
+        "NO_SESSION": "Session expirée : recharge la page.",
+        "INVALID": "Univers inconnu.",
+        "RATE_LIMITED": "Trop de changements d'un coup : patiente un instant.",
+        "UNKNOWN_UNIVERSE": "Cet univers n'a plus de carte spoil : recharge la page.",
+        "FULL": "Trop d'univers en clair : refloute-en avant d'en ajouter.",
+        "UNEXPECTED": "Réglage non enregistré. Réessaie."
+      }
+    }
   },
   "locale": {
     "label": "Langue",
@@ -298,7 +325,8 @@
       "tokenInvalid": "Ce lien n'est plus valable. Demande-en un nouveau.",
       "unexpected": "Une erreur est survenue. Réessaie.",
       "tooFast": "Envoi trop rapide : patiente un instant puis réessaie.",
-      "formExpired": "Le formulaire a expiré : recharge la page puis réessaie."
+      "formExpired": "Le formulaire a expiré : recharge la page puis réessaie.",
+      "mailFailed": "L'e-mail n'a pas pu partir. Réessaie dans quelques minutes."
     },
     "fieldErrors": {
       "required": "Champ obligatoire.",
@@ -696,6 +724,12 @@
       "minPrice": "Prix min.",
       "maxPrice": "Prix max.",
       "buyout": "Achat immédiat seulement",
+      "possession": {
+        "label": "Cartes",
+        "all": "Toutes",
+        "owned": "Acquises",
+        "missing": "Non acquises"
+      },
       "apply": "Filtrer",
       "reset": "Effacer",
       "sorts": {
@@ -1528,6 +1562,7 @@
       "news": "Nouveautés",
       "universes": "Univers",
       "showcases": "Vitrines",
+      "frescoes": "Fresques",
       "casino": "Casino",
       "wrapped": "Wrapped",
       "prestige": "Prestige",
@@ -3343,7 +3378,8 @@
         "SEASON": "星 Saison",
         "REFERRAL": "招 Parrainage",
         "FRIENDS": "友 Amis",
-        "CASINO": "賭 Casino"
+        "CASINO": "賭 Casino",
+        "FRESCO": "絵 Fresque"
       },
       "itemTitle_fr": "Titre (français)",
       "itemTitle_en": "Titre (anglais, facultatif)",
@@ -3717,6 +3753,37 @@
       "reasonHint": "Interne : visible seulement dans le journal admin.",
       "message": "Message au joueur (facultatif)",
       "messagePlaceholder": "Ex. : récompense événement. Affiché avec la notification."
+    },
+    "mail": {
+      "title": "E-mails",
+      "intro": "Liens de vérification d'adresse et de mot de passe oublié, envoyés par Resend. L'expéditeur doit être sur un domaine vérifié chez Resend (DKIM, SPF).",
+      "state": "État",
+      "states": {
+        "on": "Configuré",
+        "test": "Expéditeur de test",
+        "off": "Non configuré"
+      },
+      "sender": "Domaine d'expédition",
+      "none": "aucun",
+      "offHelp": "RESEND_API_KEY ou MAIL_FROM manquant dans le .env du serveur : aucun e-mail ne part. Sur le VPS, les clés vont dans ~/kiraku/.env (pas .env.local, qui n'est pas copié dans la release), puis on redéploie.",
+      "testHelp": "MAIL_FROM utilise l'adresse de test @resend.dev : Resend ne livre qu'au propriétaire du compte Resend et refuse tous les joueurs. Vérifie kiraku-kun.com chez Resend puis mets MAIL_FROM=\"Kiraku <noreply@kiraku-kun.com>\".",
+      "testTo": "Envoyer un e-mail de test à",
+      "send": "Envoyer un e-mail de test",
+      "sending": "Envoi…",
+      "sent": "E-mail parti. Vérifie la boîte de réception (et les indésirables).",
+      "testSubject": "Kiraku : e-mail de test",
+      "testBody": "Bonjour {name},\n\nCet e-mail de test confirme que Kiraku peut envoyer des e-mails (vérification d'adresse, mot de passe oublié).\n\nL'équipe Kiraku",
+      "reasons": {
+        "disabled": "Envoi non configuré sur ce serveur (RESEND_API_KEY ou MAIL_FROM manquant).",
+        "refused": "Resend a refusé l'e-mail :",
+        "unreachable": "Resend ne répond pas :",
+        "error": "Erreur inattendue pendant l'envoi."
+      },
+      "errors": {
+        "FORBIDDEN": "Réservé aux admins.",
+        "INVALID": "Adresse e-mail invalide.",
+        "RATE_LIMITED": "Trop d'essais : 5 e-mails de test par heure."
+      }
     },
     "general": {
       "title": "Général",
@@ -4230,7 +4297,9 @@
         "dropDivin": "Chute d'un Divin",
         "dropSpared": "Apocalyptique épargné",
         "dropRuined": "Apocalyptique ruiné"
-      }
+      },
+      "fresco": "Fragment de fresque",
+      "noFresco": "Aucun fragment"
     },
     "directSend": {
       "title": "Envoyer à tous les inscrits",
@@ -4941,7 +5010,8 @@
         "all": "Tous les groupes",
         "device": "Avec un appareil commun",
         "ip": "Avec une IP commune",
-        "flow": "Avec un flux à sens unique"
+        "flow": "Avec un flux à sens unique",
+        "banned": "Comptes bannis"
       },
       "includeGuests": "Inclure les invités",
       "apply": "Filtrer",
@@ -4949,10 +5019,17 @@
       "noClusters": "Aucun groupe n'atteint le seuil avec ces filtres.",
       "clusterTitle": "Groupe {index} · {count} comptes",
       "moreClusters": "{count, plural, one {# autre groupe} other {# autres groupes}}, moins suspects : affinez la recherche.",
-      "handledTitle": "{count, plural, one {# groupe déjà banni} other {# groupes déjà bannis}}",
+      "bannedTitle": "{count, plural, =0 {Aucun compte banni} one {# compte banni} other {# comptes bannis}}",
+      "bannedIntro": "Les comptes bannis, du plus récent au plus ancien. Ils n'apparaissent plus dans les groupes, les IP partagées, le classement ni les listes d'amis. Le ban se lève depuis la fiche du joueur.",
+      "noBanned": "Aucun compte banni ne correspond.",
+      "bannedAt": "Banni le",
+      "lastSeen": "Dernière visite",
+      "sheet": "Fiche",
+      "openSheet": "Ouvrir la fiche (lever le ban)",
+      "moreBanned": "{count, plural, one {# autre compte banni : affine la recherche.} other {# autres comptes bannis : affine la recherche.}}",
       "score": "Score {score}",
+      "bannedLinked": "{count, plural, one {Relié à # compte banni} other {Relié à # comptes bannis}}",
       "belowThreshold": "sous le seuil",
-      "partlyBanned": "{count, plural, one {# compte déjà banni} other {# comptes déjà bannis}}",
       "newSinceBan": "{count, plural, one {# compte banni} other {# comptes bannis}}, un compte créé depuis : contournement ?",
       "pairsTitle": "{count, plural, one {Détail de # lien} other {Détail des # liens}}",
       "memberStatus": {
@@ -4978,6 +5055,7 @@
       "accounts": "Comptes",
       "publicIp": "IP publique probable",
       "more": "+{count}",
+      "bannedHidden": "{count, plural, one {(+# banni)} other {(+# bannis)}}",
       "linkedTitle": "Comptes liés",
       "linkedIntro": "Comptes reliés à ce joueur par au moins un indice, invités compris. Au-dessus de {minScore}, ils forment un groupe dans Multi-comptes.",
       "noLinked": "Aucun compte relié.",
@@ -5169,6 +5247,140 @@
       "goalLabel": "Seuil de « {name} »",
       "fixed": "Seuil figé",
       "active": "Actif"
+    },
+    "frescoes": {
+      "title": "Fresques",
+      "intro": "Une grande image 4:3 découpée en 4 × 3 fragments. Chaque fragment tombe d'un booster, glissé en plus des cartes, jamais en double. Une fresque en brouillon reste invisible des joueurs : ni chute, ni onglet, ni image.",
+      "settings": {
+        "section": "Chute des fragments",
+        "hint": "Un jet par booster ouvert (stock, Zeni, crédit ou sachet scellé), jamais pour un booster garanti, un lot ou une mission.",
+        "keys": {
+          "fresco": {
+            "enabled": "Fragments activés",
+            "dropRate": "Chance par booster (points de base, 10 000 = 100 %)",
+            "newHours": "Badge « Nouveau » de l'onglet Nouveautés (heures, 0 = jamais)"
+          }
+        },
+        "odds": "1 booster sur {oneIn} · environ {boosters, number} boosters pour finir une fresque seule en jeu",
+        "oddsOff": "Aucun fragment ne tombe."
+      },
+      "create": {
+        "title": "Nouvelle fresque",
+        "name": "Nom (français)",
+        "submit": "Créer le brouillon"
+      },
+      "list": {
+        "title": "Toutes les fresques",
+        "empty": "Aucune fresque pour l'instant.",
+        "pieces": "{count}/{total} fragments",
+        "owners": "{count, plural, =0 {Aucun détenteur} one {# détenteur} other {# détenteurs}}",
+        "completions": "{count, plural, =0 {jamais complétée} one {complétée # fois} other {complétée # fois}}",
+        "published": "Publiée le {date}",
+        "edit": "Modifier",
+        "noImage": "Sans image"
+      },
+      "status": {
+        "DRAFT": "Brouillon",
+        "PUBLISHED": "Publiée",
+        "ARCHIVED": "Archivée"
+      },
+      "editor": {
+        "back": "Toutes les fresques",
+        "imageSection": "Image",
+        "imageHint": "Glisse une image ici ou choisis-la. Format 4:3 conseillé (2400 × 1800) ; 1200 × 900 au minimum. Une image d'un autre format est recadrée en 4:3.",
+        "drop": "Déposer l'image de la fresque",
+        "choose": "Choisir une image",
+        "focus": "Cadrage",
+        "focusHint": "Fais glisser pour choisir la partie gardée de l'image.",
+        "localNote": "Aperçu local : rien n'est envoyé tant que tu n'as pas cliqué sur « Découper et envoyer ».",
+        "upload": "Découper et envoyer",
+        "uploading": "Découpe en cours…",
+        "uploaded": "Image découpée en {count} fragments.",
+        "lockedImage": "Une fresque publiée ne change plus d'image : ses détenteurs garderaient des fragments d'une autre image.",
+        "storageSetup": "Stockage des images non configuré (BLOB_READ_WRITE_TOKEN et BLOB_PUBLIC_HOST).",
+        "nameSection": "Nom",
+        "nameFr": "Nom (français)",
+        "nameEn": "Nom (anglais, facultatif)",
+        "dropSection": "Chute",
+        "boosters": "Boosters d'où elle tombe",
+        "boostersHint": "Rien de coché : tous les boosters.",
+        "inactive": "inactif",
+        "weight": "Poids entre les fresques publiées",
+        "weightHint": "À poids égaux, deux fresques en jeu se partagent les fragments à parts égales. 0 : elle ne tombe plus.",
+        "lotsSection": "Lots",
+        "lotsHint": "Versés une seule fois par joueur, en plus du fragment.",
+        "lots": {
+          "piece": "Chaque nouveau fragment",
+          "row": "Chaque ligne remplie (4 fragments)",
+          "column": "Chaque colonne remplie (3 fragments)",
+          "complete": "Fresque complète"
+        },
+        "noLot": "Aucun lot",
+        "lotInactive": "(inactif)",
+        "manageLots": "Gérer les lots",
+        "spoilerSection": "Mode spoiler",
+        "universe": "Univers",
+        "noUniverse": "Aucun",
+        "spoiler": "Fresque spoil : floutée en mode spoiler, comme une carte",
+        "save": "Enregistrer",
+        "saved": "Fresque enregistrée.",
+        "unsaved": "Modifications non enregistrées",
+        "publish": "Publier",
+        "publishConfirm": "Publier « {name} » ? Elle apparaît dans Nouveautés, ses fragments tombent des boosters et son image ne pourra plus changer.",
+        "republish": "Republier",
+        "archive": "Archiver",
+        "archiveConfirm": "Archiver « {name} » ? Ses fragments ne tombent plus ; les joueurs gardent les leurs et peuvent toujours l'exposer.",
+        "delete": "Supprimer le brouillon",
+        "deleteConfirm": "Supprimer définitivement « {name} » et ses images ? Impossible à annuler.",
+        "confirm": "Confirmer",
+        "cancel": "Annuler",
+        "owners": "{count, plural, =0 {Aucun joueur n'en a de fragment.} one {# joueur en a au moins un fragment.} other {# joueurs en ont au moins un fragment.}}",
+        "errors": {
+          "FORBIDDEN": "Réservé à l'administrateur.",
+          "INVALID": "Une valeur est invalide.",
+          "RATE_LIMITED": "Trop d'actions d'un coup, réessaie dans un instant.",
+          "NOT_FOUND": "Cette fresque n'existe plus.",
+          "NOT_DRAFT": "Seul un brouillon peut changer d'image ou être supprimé.",
+          "INCOMPLETE": "Il faut un nom et les 12 fragments pour publier.",
+          "BAD_REF": "Un univers, un booster ou un lot choisi n'existe plus.",
+          "BAD_STATUS": "Ce changement de statut n'est pas possible.",
+          "HAS_OWNERS": "Des joueurs ont déjà des fragments de cette fresque.",
+          "UNAVAILABLE": "Impossible pour l'instant, réessaie.",
+          "IMAGE_INVALID": "Image illisible (JPEG, PNG ou WebP).",
+          "IMAGE_TOO_SMALL": "Image trop petite : 1200 × 900 au minimum après recadrage.",
+          "IMAGE_TOO_LARGE": "Image trop lourde.",
+          "STORAGE_UNAVAILABLE": "Stockage des images indisponible.",
+          "UPLOAD_FAILED": "Envoi impossible, réessaie."
+        }
+      },
+      "preview": {
+        "title": "Aperçu en direct",
+        "intro": "Exactement les composants des joueurs. Touche les cases pour choisir ce que le joueur possède.",
+        "tabs": {
+          "profile": "Profil",
+          "opening": "Ouverture",
+          "news": "Nouveautés"
+        },
+        "owned": "Fragments possédés",
+        "presets": {
+          "none": "Aucun",
+          "one": "1 fragment",
+          "row": "Ligne 1",
+          "column": "Colonne 1",
+          "complete": "Complète"
+        },
+        "cell": "Case {n}",
+        "theme": "Décor de vitrine",
+        "frame": {
+          "phone": "Téléphone",
+          "desktop": "Ordinateur"
+        },
+        "light": "Thème clair Washi",
+        "replay": "Rejouer",
+        "cardsPlaceholder": "Ici, les cartes de la vitrine.",
+        "noImage": "Dépose une image pour voir l'aperçu.",
+        "lastPiece": "Le dernier fragment touché est celui qui tombe."
+      }
     }
   },
   "collection": {
@@ -6494,7 +6706,8 @@
         "REBIRTH": "Renaissance (prestige)",
         "KYARA_IMPORT": "Import Kyara (cartes converties)",
         "REFERRAL_CLAWBACK": "Reprise du parrainage (triche)",
-        "ENNICHI": "Ennichi (fête du parrainage)"
+        "ENNICHI": "Ennichi (fête du parrainage)",
+        "FRESCO": "Fresque (fragment, ligne ou colonne)"
       }
     },
     "reveal": {
@@ -7326,7 +7539,6 @@
       "consent": "Retient tes choix de cookies.",
       "theme": "Retient le thème Yoru ou Washi.",
       "motion": "Retient si les animations sont coupées.",
-      "spoiler": "Retient si les illustrations spoil sont floutées (mode spoiler).",
       "locale": "Retient la langue choisie.",
       "sound": "Retient si le son est activé.",
       "discordLater": "Retient quand tu as repoussé l'invitation Discord (« Plus tard »).",
@@ -7836,13 +8048,15 @@
     "searchPlaceholder": "Chercher une carte, une série, un joueur…",
     "filtersLabel": "Filtres",
     "filters": {
-      "missing": "Que je n'ai pas",
+      "missing": "Non acquises",
       "canAccept": "Que je peux donner",
-      "mine": "Mes offres"
+      "mine": "Mes offres",
+      "owned": "Acquises"
     },
     "empty": {
       "all": "Aucune annonce d'échange pour l'instant. Lance la première !",
       "missing": "Aucune annonce pour une carte que tu n'as pas.",
+      "owned": "Aucune annonce pour une carte que tu as déjà.",
       "canAccept": "Tu n'as aucune des cartes demandées dans les annonces ouvertes.",
       "mine": "Tu n'as aucune offre en attente."
     },
@@ -9747,6 +9961,80 @@
         "name": "Sacrilège",
         "desc": "Recycler une Mythique"
       }
+    }
+  },
+  "fresco": {
+    "label": "{name}, {owned} fragments sur {total}",
+    "labelComplete": "{name}, fresque complète",
+    "progress": "{owned}/{total} fragments",
+    "complete": "Fresque complète",
+    "fragment": "Fragment de fresque",
+    "newFragment": "Nouveau fragment",
+    "position": "ligne {row}, colonne {col}",
+    "rewardKinds": {
+      "PIECE": "Nouveau fragment",
+      "ROW": "Ligne {index} complète",
+      "COLUMN": "Colonne {index} complète",
+      "COMPLETE": "Fresque complète !"
+    },
+    "zeni": "+{amount, number} Zeni",
+    "boosters": "{count, plural, one {# booster} other {# boosters}}",
+    "cards": "{count, plural, one {# carte} other {# cartes}}",
+    "revealCards": "{count, plural, one {Voir la carte} other {Voir les # cartes}}",
+    "counter": "Fragment {current} sur {total}",
+    "next": "Fragment suivant",
+    "continue": "Continuer",
+    "replay": "Revoir",
+    "recapTitle": "{count, plural, one {Fragment de fresque} other {# fragments de fresque}}",
+    "view": {
+      "label": "Afficher dans la vitrine",
+      "cards": "Cartes",
+      "fresco": "Fresque"
+    },
+    "picker": {
+      "button": "Fresque",
+      "title": "Fresque de la vitrine",
+      "intro": "Choisis la fresque montrée dans cette vitrine. Les fragments qui te manquent restent vides.",
+      "none": "Aucune fresque",
+      "first": "Ouvrir la vitrine sur la fresque",
+      "firstHint": "Les visiteurs voient d'abord la fresque, puis peuvent passer aux cartes.",
+      "empty": "Tu n'as encore aucun fragment : ils tombent des boosters, glissés en plus des cartes.",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "saved": "Fresque mise à jour.",
+      "errors": {
+        "NO_SESSION": "Connecte-toi pour modifier ta vitrine.",
+        "INVALID": "Choix invalide.",
+        "RATE_LIMITED": "Trop de changements d'un coup, réessaie dans un instant.",
+        "NOT_FOUND": "Cette vitrine n'existe plus.",
+        "NOT_OWNED": "Tu n'as aucun fragment de cette fresque.",
+        "UNAVAILABLE": "Impossible pour l'instant, réessaie."
+      }
+    },
+    "news": {
+      "tabsLabel": "Nouveautés",
+      "cardsTab": "Nouvelles cartes",
+      "frescoesTab": "Nouvelles fresques",
+      "title": "Nouvelles fresques",
+      "intro": "Une grande image découpée en 12 fragments. Chaque fragment tombe d'un booster, sans jamais de doublon : complète une ligne, une colonne, puis la fresque entière pour gagner ses lots.",
+      "published": "Sortie le {date}",
+      "newBadge": "Nouveau",
+      "fragments": "{count} fragments",
+      "teaser": "Aperçu flouté de la fresque {name}",
+      "where": "Tombe de",
+      "allBoosters": "Tous les boosters",
+      "rewards": "Récompenses",
+      "rewardLabels": {
+        "PIECE": "Chaque nouveau fragment",
+        "ROW": "Chaque ligne remplie",
+        "COLUMN": "Chaque colonne remplie",
+        "COMPLETE": "Fresque complète"
+      },
+      "noReward": "Rien",
+      "yourProgress": "Ta progression",
+      "notStarted": "Aucun fragment pour l'instant.",
+      "guest": "Ouvre des boosters pour trouver ses fragments.",
+      "empty": "Aucune fresque pour l'instant."
     }
   }
 }

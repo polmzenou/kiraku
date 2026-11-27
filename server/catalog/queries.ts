@@ -7,6 +7,7 @@ import { publishedFromCounts } from "@/lib/catalog/visible-rarities";
 import { seriesTitle } from "@/lib/catalog/display";
 import type { WikiCatalogParams, WikiFilterOptions, WikiParams } from "@/lib/catalog/wiki-params";
 import { emptyWikiCollection, selectWikiPage, type CatalogSearchIndex } from "@/lib/catalog/wiki-state";
+import { spoilerKeyOf } from "@/lib/spoiler";
 import { getRarities } from "./rarities";
 import { readCatalogVersion } from "./version";
 import { prisma } from "../db";
@@ -38,14 +39,17 @@ const summarySelect = {
   ki: true,
   formName: true,
   spoiler: true,
-  series: { select: { titleRomaji: true, titleEnglish: true } },
+  seriesId: true,
+  series: { select: { titleRomaji: true, titleEnglish: true, universeId: true } },
 } satisfies Prisma.CardSelect;
 
 type SummaryRow = Prisma.CardGetPayload<{ select: typeof summarySelect }>;
-export type CatalogCardSummary = Omit<SummaryRow, "anilistId"> & { anilistId: number; sourceAnilistId: number | null };
+export type CatalogCardSummary = Omit<SummaryRow, "anilistId"> & { anilistId: number; sourceAnilistId: number | null; spoilerKey: string | null };
 // Preserve the numeric public view contract used by existing collection clients.
-function publicCard<T extends { anilistId: number | null; publicId: number }>(row: T) {
-  return { ...row, sourceAnilistId: row.anilistId, anilistId: row.publicId };
+// Clé d'univers d'une carte spoil (mode spoiler) : donnée publique, identique pour tous dans les caches partagés.
+function publicCard<T extends { anilistId: number | null; publicId: number; spoiler: boolean; seriesId: string; series: { universeId: string | null } }>(row: T) {
+  const spoilerKey = row.spoiler ? spoilerKeyOf({ id: row.seriesId, universeId: row.series.universeId }) : null;
+  return { ...row, sourceAnilistId: row.anilistId, anilistId: row.publicId, spoilerKey };
 }
 
 const detailSelect = {
@@ -55,14 +59,14 @@ const detailSelect = {
   description: true,
   role: true,
   seriesId: true,
-  series: { select: { titleRomaji: true, titleEnglish: true, titleNative: true, type: true } },
+  series: { select: { titleRomaji: true, titleEnglish: true, titleNative: true, type: true, universeId: true } },
   // Formes liées : la carte de base d'une variante, ou les variantes publiées d'une base.
   variantOf: { select: summarySelect },
   variants: { where: { status: "PUBLISHED" }, orderBy: { publicId: "asc" }, select: summarySelect },
 } satisfies Prisma.CardSelect;
 
 export type CatalogCardDetail = Omit<Prisma.CardGetPayload<{ select: typeof detailSelect }>, "anilistId" | "variantOf" | "variants"> & {
-  anilistId: number; sourceAnilistId: number | null; variantOf: CatalogCardSummary | null; variants: CatalogCardSummary[];
+  anilistId: number; sourceAnilistId: number | null; spoilerKey: string | null; variantOf: CatalogCardSummary | null; variants: CatalogCardSummary[];
 };
 
 // `_version` ne sert qu'à la clé de cache (unstable_cache y inclut les arguments)

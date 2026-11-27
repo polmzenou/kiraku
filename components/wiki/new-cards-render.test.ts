@@ -38,8 +38,8 @@ const render = (locale: "fr" | "en", node: ReactElement) => renderToStaticMarkup
 
 const summary = (anilistId: number, name: string, extra: Partial<CatalogCardSummary> = {}): CatalogCardSummary => ({
   anilistId, publicId: anilistId, sourceAnilistId: null, status: "PUBLISHED", appearance: {}, name, nameNative: null,
-  imageUrl: `https://blob.example/${anilistId}.webp`, rank: null, rarity: "MYTHIC", power: 90, ki: 70, formName: null, spoiler: false,
-  series: { titleRomaji: "One Piece", titleEnglish: null }, ...extra,
+  imageUrl: `https://blob.example/${anilistId}.webp`, rank: null, rarity: "MYTHIC", power: 90, ki: 70, formName: null, spoiler: false, spoilerKey: null,
+  seriesId: "one-piece", series: { titleRomaji: "One Piece", titleEnglish: null, universeId: null }, ...extra,
 });
 const item = (card: CatalogCardSummary, extra: Partial<NewCardItem> = {}): NewCardItem => ({
   card, premium: true, boosters: ["Impérial"], state: { copies: 0, discovered: false }, isNew: true, ...extra,

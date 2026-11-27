@@ -10,7 +10,8 @@ import { SETTING_DEFAULTS } from "@/lib/settings/defaults";
 const reader = vi.hoisted(() => ({ query: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ unstable_cache: <T,>(fn: T) => fn }));
-vi.mock("../db", () => ({ prisma: { $queryRaw: reader.query } }));
+// user.findMany : bans relus après le cache (server/social/banned.ts), aucun ici depuis le calcul
+vi.mock("../db", () => ({ prisma: { $queryRaw: reader.query, user: { findMany: async () => [] } } }));
 vi.mock("../settings", () => ({ getSetting: vi.fn() }));
 import { decorColumns } from "../profile/decor";
 import { getDivisionBoard } from "./queries";

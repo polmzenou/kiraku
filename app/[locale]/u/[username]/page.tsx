@@ -34,6 +34,7 @@ import { anonymousAccess, findProfileOwner } from "@/server/collection/profile";
 import { loadProfile } from "@/server/collection/profile-page";
 import { getCollectionSummary } from "@/server/collection/queries";
 import { getShowcaseCards, listShowcases } from "@/server/showcase/queries";
+import { showcaseFresco } from "@/server/fresco/queries";
 import { getProfileSales, getWishlist } from "@/server/collection/profile-cards";
 import { ownedCardIds } from "@/server/collection/owned";
 import { getSetting } from "@/server/settings";
@@ -126,8 +127,10 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
     // Prestige : bandeau et record pour un joueur qui a renaît
     getSetting("prestige.enabled"),
   ]);
-  const [featuredCards, summary, wishlist, sales, incense, prestigeSummary] = await Promise.all([
+  const [featuredCards, mainFresco, summary, wishlist, sales, incense, prestigeSummary] = await Promise.all([
     showcases[0] ? getShowcaseCards(showcases[0].id, owner.id, showcases[0].layout, locale) : [],
+    // Fresque de la vitrine principale : seulement les fragments du propriétaire, l'image entière une fois complète
+    showcaseFresco(owner.id, showcases[0], locale),
     getCollectionSummary(owner.id, values),
     getWishlist(owner.id, locale), getProfileSales(owner.id, locale),
     // Encens : seulement sur son propre profil
@@ -256,6 +259,7 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
         owned={owned}
         linkBase={access.isOwner ? "/collection" : "/wiki"}
         create={access.isOwner ? <CreateShowcaseButton username={owner.username} count={showcases.length} max={maxShowcases} /> : undefined}
+        mainFresco={mainFresco}
       />
       {/* Prestige : sanctuaire des cartes consacrées, puis rouleaux des cycles (rien avant la première renaissance) */}
       {decor.prestige > 0 && (
