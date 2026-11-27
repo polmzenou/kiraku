@@ -1292,6 +1292,7 @@
       "currentBalance": "Current balance: {amount, number} Zeni",
       "before": "Before",
       "after": "After:",
+      "afterZeni": "After: {amount, number} Zeni",
       "ledgerHint": "The balance and Zeni ledger are updated together. Zeni committed to auctions remain reserved.",
       "stats": {
         "boosterStock": "Free booster stock",

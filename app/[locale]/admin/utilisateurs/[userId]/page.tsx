@@ -61,7 +61,7 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
 
   return (
     <div className="flex flex-col gap-6">
-      <Link href="/admin/utilisateurs" className="self-start text-sm text-link underline underline-offset-4">← {t("back")}</Link>
+      <Link href="/admin/utilisateurs" className="inline-flex min-h-11 items-center self-start text-sm text-link underline underline-offset-4">← {t("back")}</Link>
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <h2 className="break-all font-heading text-2xl font-bold">{user.username}</h2>
@@ -178,7 +178,8 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
           <table className="w-full text-left text-sm">
             <thead className="border-b border-border bg-surface-2"><tr>{(["card", "rarity", "copies", "discovered", "manage"] as const).map((k) => <th key={k} scope="col" className="p-3">{t(k)}</th>)}</tr></thead>
             <tbody>{collection.cards.map((c) => <tr key={c.id} className="border-b border-border last:border-0">
-              <td className="p-3"><Link href={`/wiki/${c.anilistId}`} className="font-bold text-link underline underline-offset-4">{c.name}</Link>{c.rank === null && <p className="text-xs text-text-muted">{t("archivedCard")}</p>}</td>
+              {/* Le wiki se résout par le numéro public (égal à l'id AniList, ou propre à une carte sans AniList) */}
+              <td className="p-3"><Link href={`/wiki/${c.publicId}`} className="font-bold text-link underline underline-offset-4">{c.name}</Link>{c.rank === null && <p className="text-xs text-text-muted">{t("archivedCard")}</p>}</td>
               <td className="p-3">{rarity(c.rarity)}</td><td className="p-3 tabular-nums">{c._count.copies}</td><td className="p-3">{t(c.discoveries.length > 0 || c._count.copies > 0 ? "yes" : "no")}</td>
               <td className="p-3"><Link href={cardHref(collection.page, c.id)} className={buttonClasses()}>{t("manage")}<span className="sr-only"> {c.name}</span></Link></td>
             </tr>)}</tbody>
@@ -209,7 +210,7 @@ export default async function AdminUserPage({ params, searchParams }: PageProps<
       {!(readOnly && user.role === "ADMIN") && <section className="flex flex-col gap-3">
         <h3 className="font-title text-xl font-bold">{t("audit")}</h3>
         {logs.length === 0 ? <p className="text-sm text-text-muted">{t("historyEmpty")}</p> : <ul className="flex flex-col gap-2">
-          {logs.map((log) => <li key={log.id}><details className="lacquer rounded-card p-3 text-sm"><summary className="cursor-pointer"><strong>{actionNames.get(log.action) ?? log.action}</strong> · {log.admin.username} · {format.dateTime(log.createdAt, { dateStyle: "short", timeStyle: "short" })}</summary><div className="mt-3 grid gap-3 sm:grid-cols-2"><div><h4 className="mb-1 font-bold">{t("before")}</h4><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all text-xs text-text-muted">{JSON.stringify(log.before, null, 2)}</pre></div><div><h4 className="mb-1 font-bold">{t("after")}</h4><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all text-xs text-text-muted">{JSON.stringify(log.after, null, 2)}</pre></div></div></details></li>)}
+          {logs.map((log) => <li key={log.id}><details className="lacquer rounded-card text-sm"><summary className="min-h-11 cursor-pointer p-3"><strong>{actionNames.get(log.action) ?? log.action}</strong> · {log.admin.username} · {format.dateTime(log.createdAt, { dateStyle: "short", timeStyle: "short" })}</summary><div className="grid gap-3 px-3 pb-3 sm:grid-cols-2"><div><h4 className="mb-1 font-bold">{t("before")}</h4><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all text-xs text-text-muted">{JSON.stringify(log.before, null, 2)}</pre></div><div><h4 className="mb-1 font-bold">{t("after")}</h4><pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all text-xs text-text-muted">{JSON.stringify(log.after, null, 2)}</pre></div></div></details></li>)}
         </ul>}
       </section>}
     </div>

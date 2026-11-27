@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import { adminUserMutationSchema, MAX_ADMIN_VALUE } from "@/lib/admin/users";
-import { mutateAdminUserWith } from "./users-core";
+import { LOGGED_DISCOVERY_IDS, mutateAdminUserWith } from "./users-core";
 
 const base = { userId: "player", reason: "Correction" };
 const target = {
@@ -34,6 +34,8 @@ function setup({ role = "ADMIN", banned = false, exists = true, player = {} as P
     discordRoleSync: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
     boosterType: { findUnique: vi.fn().mockResolvedValue({ id: "type" }) },
     boosterCredit: { findUnique: vi.fn().mockResolvedValue({ count: 5 }), upsert: vi.fn() },
+    // Sachets scellés (types DROP) : une ligne par sachet non ouvert
+    sealedDrop: { findMany: vi.fn().mockResolvedValue([{ id: "d1" }, { id: "d2" }]), createMany: vi.fn(), deleteMany: vi.fn() },
     card: { findUnique: vi.fn().mockResolvedValue({ id: "card" }), count: vi.fn().mockResolvedValue(100) },
     userCard: {
       count: vi.fn().mockResolvedValue(3), createMany: vi.fn(), findMany: vi.fn().mockResolvedValue([]), deleteMany: vi.fn(),
@@ -307,6 +309,33 @@ describe("mutations admin atomiques", () => {
     const { tx, db } = setup();
     await expect(mutateAdminUserWith(db, "admin", { ...base, kind: "discoveries", value: 0 })).rejects.toMatchObject({ code: "DISCOVERY_MIN" });
     expect(tx.adminLog.create).not.toHaveBeenCalled();
+  });
+  it("garde des nombres exacts mais peu d'ids dans le journal d'un « Tout découvrir »", async () => {
+    const { tx, db } = setup();
+    tx.card.count.mockResolvedValueOnce(10_000);
+    const added = Array.from({ length: 5_000 }, (_, i) => ({ cardId: `c${i}` }));
+    const original = tx.$queryRaw.getMockImplementation()!;
+    tx.$queryRaw.mockImplementation(async (strings: TemplateStringsArray, ...values: unknown[]) =>
+      strings.join("?").includes('INSERT INTO "Discovery"') ? (added as never) : original(strings, ...values));
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "discoveries", value: 5_003 });
+    const after = tx.adminLog.create.mock.calls[0][0].data.after.values;
+    expect(after).toMatchObject({ count: 5_003, added: 5_000, removed: 0 });
+    expect(after.addedCardIds).toHaveLength(LOGGED_DISCOVERY_IDS);
+    expect(after.addedCardIds[0]).toBe("c0");
+  });
+  it("borne le nombre de sachets scellés créés par un « Définir »", async () => {
+    const { tx, db } = setup();
+    tx.boosterType.findUnique.mockResolvedValue({ id: "drop", kind: "DROP" });
+    // Faute de frappe : des millions de lignes sous le verrou, refusées sans rien écrire
+    await expect(mutateAdminUserWith(db, "admin", { ...base, kind: "booster", boosterTypeId: "drop", mode: "SET", amount: 10_000_000, message: null })).rejects.toMatchObject({ code: "LIMIT" });
+    expect(tx.sealedDrop.createMany).not.toHaveBeenCalled();
+    expect(tx.adminLog.create).not.toHaveBeenCalled();
+    // Jusqu'à 1 000 de plus d'un coup, comme un ajout
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "booster", boosterTypeId: "drop", mode: "SET", amount: 1_002, message: null });
+    expect(tx.sealedDrop.createMany.mock.calls[0][0].data).toHaveLength(1_000);
+    // Descendre reste possible, sachet par sachet
+    await mutateAdminUserWith(db, "admin", { ...base, kind: "booster", boosterTypeId: "drop", mode: "SET", amount: 0, message: null });
+    expect(tx.sealedDrop.deleteMany).toHaveBeenCalledWith({ where: { id: { in: ["d1", "d2"] }, ownerId: "player", openedAt: null } });
   });
 });
 

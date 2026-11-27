@@ -21,11 +21,28 @@ describe("filtres du journal admin", () => {
   });
 
   it("bornes de dates inclusives, en UTC", () => {
-    expect(dateRange({ from: "2026-10-01", to: "2026-10-16" })).toEqual({
+    expect(dateRange({ from: "2026-10-01", to: "2026-10-16" }, "UTC")).toEqual({
       gte: new Date("2026-10-01T00:00:00Z"),
       lt: new Date("2026-10-17T00:00:00Z"),
     });
-    expect(dateRange({})).toEqual({});
+    expect(dateRange({}, "UTC")).toEqual({});
+  });
+
+  it("bornes de dates à minuit dans le fuseau des heures affichées, été comme hiver", () => {
+    // Paris : UTC+2 jusqu'au 25 octobre 2026, UTC+1 ensuite
+    expect(dateRange({ from: "2026-10-01", to: "2026-10-16" }, "Europe/Paris")).toEqual({
+      gte: new Date("2026-09-30T22:00:00Z"),
+      lt: new Date("2026-10-16T22:00:00Z"),
+    });
+    expect(dateRange({ from: "2026-11-27", to: "2026-11-27" }, "Europe/Paris")).toEqual({
+      gte: new Date("2026-11-26T23:00:00Z"),
+      lt: new Date("2026-11-27T23:00:00Z"),
+    });
+    // Jour du changement d'heure : 25 heures
+    expect(dateRange({ from: "2026-10-25", to: "2026-10-25" }, "Europe/Paris")).toEqual({
+      gte: new Date("2026-10-24T22:00:00Z"),
+      lt: new Date("2026-10-25T23:00:00Z"),
+    });
   });
 
   it("conserve les filtres dans les liens de pagination", () => {

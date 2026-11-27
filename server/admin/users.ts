@@ -187,7 +187,8 @@ export async function getAdminUserCards(userId: string, query: string, requested
   const pages = Math.max(1, Math.ceil(total / ADMIN_USER_PAGE_SIZE));
   const page = Math.min(requestedPage, pages - 1);
   const cards = await prisma.card.findMany({ where, orderBy: [{ rank: { sort: "asc", nulls: "last" } }, { id: "asc" }], skip: page * ADMIN_USER_PAGE_SIZE, take: ADMIN_USER_PAGE_SIZE,
-    select: { id: true, anilistId: true, publicId: true, appearance: true, name: true, rarity: true, rank: true, discoveries: { where: { userId }, select: { cardId: true } },
+    // publicId : le numéro du wiki (anilistId est nul pour une carte sans AniList)
+    select: { id: true, publicId: true, name: true, rarity: true, rank: true, discoveries: { where: { userId }, select: { cardId: true } },
       _count: { select: { copies: { where: { ownerId: userId } } } } },
   });
   return { cards, total, page, pages };

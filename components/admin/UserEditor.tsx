@@ -115,7 +115,6 @@ function ModeField({ value, onChange }: { value: Mode; onChange: (v: Mode) => vo
 
 function BalanceForm({ coins }: { coins: number }) {
   const t = useTranslations("admin.users");
-  const format = useFormatter();
   const [mode, setMode] = useState<Mode>("SET");
   const [amount, setAmount] = useState(coins);
   let next: number | null = null;
@@ -125,7 +124,7 @@ function BalanceForm({ coins }: { coins: number }) {
       <p className="text-sm text-text-muted">{t("currentBalance", { amount: coins })}</p>
       <ModeField value={mode} onChange={(v) => { setMode(v); setAmount(v === "SET" ? coins : 1); }} />
       <NumberField label={t("amount")} min={mode === "SET" ? 0 : 1} max={mode === "SET" ? MAX_ADMIN_VALUE : MAX_MOVEMENT} value={amount} onChange={setAmount} />
-      <p className="text-sm font-bold text-kin">{t("after")} {next === null ? "—" : format.number(next)} Zeni</p>
+      <p className="text-sm font-bold text-kin">{next === null ? `${t("after")} —` : t("afterZeni", { amount: next })}</p>
       <p className="text-xs text-text-muted">{t("ledgerHint")}</p>
     </MutationForm>
   );

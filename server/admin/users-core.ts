@@ -6,7 +6,7 @@ import { randomInt, randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { heritageCap } from "@/lib/prestige/heritage";
 import { printingSize, type Edition } from "@/lib/prestige/printing";
-import { adjustedValue, MAX_ADMIN_VALUE, type AdminEngraving, type AdminUserError, type AdminUserMutation } from "@/lib/admin/users";
+import { adjustedValue, MAX_ADMIN_QUANTITY, MAX_ADMIN_VALUE, type AdminEngraving, type AdminUserError, type AdminUserMutation } from "@/lib/admin/users";
 import { takeChosenSerial, takeSerial } from "../prestige/printing-core";
 import { computeStock, stockRulesFor, type StockSettings } from "@/lib/boosters/stock";
 import { ORDINARY_COPY } from "@/lib/collection/copies";
@@ -30,6 +30,12 @@ export class AdminUserMutationError extends Error {
 }
 
 const json = (v: unknown): Prisma.InputJsonValue => JSON.parse(JSON.stringify(v));
+
+/**
+ * Ids de cartes recopiés au plus dans le journal d'un changement de découvertes : « Tout découvrir » en ajoute des
+ * milliers (tout le catalogue publié), que la fiche et le journal relisaient en entier. Les nombres restent exacts.
+ */
+export const LOGGED_DISCOVERY_IDS = 200;
 
 /** Réglages du stock lus en base dans la transaction (pas dans le cache) : le calcul est exact. */
 async function stockSettings(tx: Tx): Promise<StockSettings> {
@@ -183,7 +189,7 @@ async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUs
     if (!actor || actor.role !== "ADMIN" || actor.bannedAt) throw new AdminUserMutationError("FORBIDDEN");
     const user = await tx.user.findUnique({ where: { id: input.userId }, select: {
       id: true, username: true, role: true, bannedAt: true, profileVisibility: true, showCollection: true,
-      coins: true, boosterStock: true, boosterAnchor: true, rankPoints: true, pityCount: true, standardCount: true, bannerPity: true, battleTeam: true,
+      coins: true, boosterStock: true, boosterAnchor: true, rankPoints: true, pityCount: true, standardCount: true, bannerPity: true,
       ambassadorSince: true, titleId: true, frameId: true, nameColorId: true, leaderboardHiddenAt: true, leaderboardMalus: true, leaderboardMythicMalus: true,
       incenseUsed: true, incenseBonus: true,
     } });
@@ -254,6 +260,9 @@ async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUs
             select: { id: true },
           });
           const count = adjust(unopened.length, input.mode, input.amount);
+          // Une ligne par sachet : au plus MAX_ADMIN_QUANTITY créés d'un coup, comme un ajout. Un « Définir » à
+          // plusieurs millions (faute de frappe) remplissait la mémoire du processus sous le verrou des deux comptes.
+          if (count - unopened.length > MAX_ADMIN_QUANTITY) throw new AdminUserMutationError("LIMIT");
           before = { boosterTypeId: input.boosterTypeId, sealed: unopened.length };
           after = { boosterTypeId: input.boosterTypeId, sealed: count };
           if (count > unopened.length) {
@@ -409,7 +418,11 @@ async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUs
             ) RETURNING "cardId"`;
           if (removed.length !== count - input.value) throw new AdminUserMutationError("DISCOVERY_MIN");
         }
-        after = { count: count + added.length - removed.length, addedCardIds: added.map((c) => c.cardId), removedCardIds: removed.map((c) => c.cardId) };
+        after = {
+          count: count + added.length - removed.length, added: added.length, removed: removed.length,
+          addedCardIds: added.slice(0, LOGGED_DISCOVERY_IDS).map((c) => c.cardId),
+          removedCardIds: removed.slice(0, LOGGED_DISCOVERY_IDS).map((c) => c.cardId),
+        };
         break;
       }
       case "ambassador": {

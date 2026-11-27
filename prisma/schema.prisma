@@ -841,6 +841,7 @@ model AdminLog {
 
   @@index([createdAt])
   @@index([adminId]) // clé étrangère : vérifiée à chaque compte supprimé
+  @@index([targetType, targetId, createdAt]) // lu par sa cible : fiche d'un joueur, relances Kyara, parrainage
 }
 
 // --- Types de boosters (étape 4) ---

@@ -1,4 +1,5 @@
 import { z } from "@/lib/zod";
+import { endOfLocalDay, localMidnight } from "../economy/period";
 import { USERNAME_REGEX } from "../username";
 
 // Filtres du journal /admin/journal, lus dans l'URL (formulaire GET) : tout paramètre invalide est ignoré.
@@ -25,11 +26,18 @@ export function parseAdminLogParams(raw: Record<string, string | string[] | unde
   return parsed.success ? parsed.data : {};
 }
 
-/** Bornes de dates en UTC : du début de `from` à la fin de `to` (inclus). */
-export function dateRange(params: Pick<AdminLogParams, "from" | "to">): { gte?: Date; lt?: Date } {
+/**
+ * Bornes de dates dans le fuseau des heures affichées (`timeZone`, celui du jeu) : de minuit le jour `from` à minuit
+ * le lendemain de `to` (inclus). En UTC, une action du 27 à 0 h 30 à Paris tombait dans le filtre du 26.
+ */
+export function dateRange(params: Pick<AdminLogParams, "from" | "to">, timeZone: string): { gte?: Date; lt?: Date } {
   const range: { gte?: Date; lt?: Date } = {};
-  if (params.from) range.gte = new Date(`${params.from}T00:00:00Z`);
-  if (params.to) range.lt = new Date(Date.parse(`${params.to}T00:00:00Z`) + 86_400_000);
+  if (params.from) {
+    const [year, month, day] = params.from.split("-").map(Number);
+    range.gte = localMidnight({ year, month, day }, timeZone);
+  }
+  const end = params.to ? endOfLocalDay(params.to, timeZone) : null;
+  if (end) range.lt = end;
   return range;
 }
 

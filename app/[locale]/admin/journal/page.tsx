@@ -1,4 +1,4 @@
-import { getFormatter, getTranslations } from "next-intl/server";
+import { getFormatter, getTimeZone, getTranslations } from "next-intl/server";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { Link } from "@/i18n/navigation";
 import { logQuery, parseAdminLogParams } from "@/lib/admin/logs";
@@ -14,13 +14,16 @@ function json(value: unknown): string {
 
 /** Journal de toutes les écritures faites depuis /admin : qui, quoi, sur quoi, avant, après. */
 export default async function AdminLogPage({ searchParams }: PageProps<"/[locale]/admin/journal">) {
-  // Ouvert au DEV : le journal ne modifie rien, ses filtres restent utilisables
-  await requireAdminView();
+  // Ouvert au DEV : le journal ne modifie rien, ses filtres restent utilisables. Comme sur la fiche d'un joueur, il ne
+  // voit pas les modifications faites sur le compte d'un administrateur.
+  const { readOnly } = await requireAdminView();
   const params = parseAdminLogParams(await searchParams);
+  // Bornes de dates dans le fuseau des heures affichées (celui du jeu, i18n/request.ts)
+  const timeZone = await getTimeZone();
   const [t, format, { items, nextCursor }] = await Promise.all([
     getTranslations("admin.journal"),
     getFormatter(),
-    listAdminLogs(params),
+    listAdminLogs(params, { timeZone, hideAdminTargets: readOnly }),
   ]);
 
   return (

@@ -1292,6 +1292,7 @@
       "currentBalance": "Solde actuel : {amount, number} Zeni",
       "before": "Avant",
       "after": "Après :",
+      "afterZeni": "Après : {amount, number} Zeni",
       "ledgerHint": "Le solde et le journal des Zeni sont modifiés ensemble. Les Zeni engagés dans des enchères restent réservés.",
       "stats": {
         "boosterStock": "Stock de boosters gratuits",

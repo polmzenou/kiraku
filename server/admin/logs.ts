@@ -3,15 +3,22 @@ import type { Prisma } from "@/generated/prisma/client";
 import { ADMIN_LOG_PAGE_SIZE, dateRange, type AdminLogParams } from "@/lib/admin/logs";
 import { prisma } from "../db";
 
-/** Journal AdminLog filtré, du plus récent au plus ancien, par curseur (id de la dernière ligne vue). */
-export async function listAdminLogs(params: AdminLogParams) {
-  const range = dateRange(params);
+/**
+ * Journal AdminLog filtré, du plus récent au plus ancien, par curseur (id de la dernière ligne vue). `timeZone` : celui
+ * des heures affichées, pour les bornes de dates. `hideAdminTargets` (DEV, lecture seule) : sans les modifications
+ * faites sur le compte d'un administrateur, que sa fiche ne lui montre pas non plus.
+ */
+export async function listAdminLogs(params: AdminLogParams, { timeZone, hideAdminTargets }: { timeZone: string; hideAdminTargets: boolean }) {
+  const range = dateRange(params, timeZone);
+  const admins = hideAdminTargets ? (await prisma.user.findMany({ where: { role: "ADMIN" }, select: { id: true } })).map((u) => u.id) : [];
   const where: Prisma.AdminLogWhereInput = {
     ...(params.action ? { action: { startsWith: params.action } } : {}),
     ...(params.type ? { targetType: params.type } : {}),
     ...(params.target ? { targetId: { startsWith: params.target } } : {}),
     ...(params.admin ? { admin: { username: { equals: params.admin, mode: "insensitive" } } } : {}),
     ...(range.gte || range.lt ? { createdAt: range } : {}),
+    // Écrit en OR plutôt qu'en NOT : une cible nulle reste visible (NOT (… IN …) vaut NULL en SQL)
+    ...(admins.length > 0 ? { OR: [{ targetType: { not: "User" } }, { targetId: null }, { targetId: { notIn: admins } }] } : {}),
   };
   const rows = await prisma.adminLog.findMany({
     where,

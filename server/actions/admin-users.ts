@@ -42,7 +42,10 @@ export async function searchAdminCards(input: unknown): Promise<AdminCardCandida
   const q = parsed.data;
   const terms = normalizeSearch(q).split(" ").filter(Boolean);
   const select = { id: true, anilistId: true, publicId: true, appearance: true, name: true, rarity: true, imageUrl: true, rank: true, series: { select: { titleRomaji: true } } } as const;
-  const exact = await prisma.card.findFirst({ where: { OR: [{ id: q }, ...(/^\d{1,9}$/.test(q) ? [{ anilistId: Number(q) }] : [])] }, select });
+  // Numéro exact : celui d'AniList, ou le numéro public affiché par la fiche (≥ 1 000 000 000 pour une carte créée
+  // dans l'admin, sans AniList), dans les bornes d'un entier Postgres
+  const number = /^\d{1,10}$/.test(q) && Number(q) <= 2_147_483_647 ? Number(q) : null;
+  const exact = await prisma.card.findFirst({ where: { OR: [{ id: q }, ...(number !== null ? [{ anilistId: number }, { publicId: number }] : [])] }, select });
   if (exact) return [{ ...exact, anilistId: exact.publicId, series: exact.series.titleRomaji }];
   if (!terms.length) return [];
   const rows = await prisma.card.findMany({

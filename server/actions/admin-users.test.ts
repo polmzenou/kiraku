@@ -61,6 +61,13 @@ describe("frontière des actions admin utilisateurs", () => {
     expect(await searchAdminCards("456")).toEqual([{ ...card, series: "Attack on Titan" }]);
     expect(mocks.findMany).not.toHaveBeenCalled();
   });
+  it("retrouve une carte sans AniList par le numéro public que la fiche affiche", async () => {
+    await searchAdminCards("1000000003");
+    expect(mocks.findFirst.mock.calls[0][0].where).toEqual({ OR: [{ id: "1000000003" }, { anilistId: 1000000003 }, { publicId: 1000000003 }] });
+    // Hors des bornes d'un entier : seulement un identifiant exact
+    await searchAdminCards("9999999999");
+    expect(mocks.findFirst.mock.calls[1][0].where).toEqual({ OR: [{ id: "9999999999" }] });
+  });
   it("ne transforme pas la ponctuation seule en recherche de tout le catalogue", async () => {
     expect(await searchAdminCards("%%%" )).toEqual([]);
     expect(mocks.findMany).not.toHaveBeenCalled();
