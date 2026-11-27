@@ -4185,7 +4185,8 @@
         "INVALID": "Invalid values (rarity or series not found?).",
         "RATE_LIMITED": "Too many saves. Try again in a minute.",
         "SLUG_TAKEN": "This identifier is already taken.",
-        "NOT_FOUND": "This entry no longer exists."
+        "NOT_FOUND": "This entry no longer exists.",
+        "UNAVAILABLE": "Couldn't save right now: try again in a moment."
       },
       "colors": {
         "lime": "Lime green",

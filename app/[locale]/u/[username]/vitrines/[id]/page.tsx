@@ -17,12 +17,13 @@ import { routing } from "@/i18n/routing";
 import { isThemeId } from "@/lib/showcase/theme-registry";
 import { effectiveTheme } from "@/lib/showcase/themes";
 import { USERNAME_REGEX } from "@/lib/username";
-import { anonymousAccess, findProfileOwner } from "@/server/collection/profile";
+import { accessFor, anonymousAccess, findProfileOwner } from "@/server/collection/profile";
 import { loadProfile } from "@/server/collection/profile-page";
 import { ownedCardIds } from "@/server/collection/owned";
 import { getSetting } from "@/server/settings";
 import { getShowcaseCards, listShowcases } from "@/server/showcase/queries";
 import { referralPreview } from "@/server/referral/preview";
+import { getCurrentUser } from "@/server/user";
 
 export async function generateMetadata({ params, searchParams }: PageProps<"/[locale]/u/[username]/vitrines/[id]">): Promise<Metadata> {
   const [{ locale: raw, username: rawUsername, id }, sp] = await Promise.all([params, searchParams]);
@@ -30,10 +31,12 @@ export async function generateMetadata({ params, searchParams }: PageProps<"/[lo
   const username = decodeURIComponent(rawUsername);
   const owner = USERNAME_REGEX.test(username) ? await findProfileOwner(username) : null;
   if (!owner) return {};
-  const showcases = await listShowcases(owner.id);
+  // Droits du visiteur, comme la page (session et relation en cache pour la requête) : un aperçu de lien
+  // (robot anonyme) ou un visiteur bloqué n'apprend rien d'un profil qu'il ne voit pas
+  const [showcases, access] = await Promise.all([listShowcases(owner.id), getCurrentUser().then((viewer) => accessFor(viewer, owner))]);
   const index = showcases.findIndex((s) => s.id === id);
-  // Une vitrine privée (pas la principale) ne dévoile ni son nom ni son contenu
-  if (index !== 0) return { robots: { index: false, follow: false } };
+  // Une vitrine privée (pas la principale), ou celle d'un profil caché à ce visiteur, ne dévoile ni son nom ni son contenu
+  if (index !== 0 || !access.profile) return { robots: { index: false, follow: false } };
   const [t, tAccount] = await Promise.all([getTranslations({ locale, namespace: "showcase" }), getTranslations({ locale, namespace: "account" })]);
   const name = displayName(owner.username, owner.isGuest, (code) => tAccount("guestName", { code }));
   const showcaseName = showcases[index].name ?? t("untitled", { n: index + 1 });
@@ -72,6 +75,10 @@ export default async function ShowcasePage({ params, searchParams }: PageProps<"
   const theme = effectiveTheme(current.theme, setting);
   const tabs = showcases.map((s, i) => ({ id: s.id, name: nameOf(i), theme: effectiveTheme(s.theme, setting) }));
   const cardIds = cards.flatMap((c) => (c ? [c.cardId] : []));
+  // Visiteur : barre des relations et pastilles « Acquise », lues ensemble
+  const [social, owned] = access.isOwner
+    ? [null, []]
+    : await Promise.all([profileSocialBar({ owner, viewer, access, name: ownerName }), current.count > 0 ? ownedCardIds(viewer?.id, cardIds) : []]);
 
   return (
     <PageShell>
@@ -123,7 +130,7 @@ export default async function ShowcasePage({ params, searchParams }: PageProps<"
             theme={theme}
             actions={<ShareProfileButton username={owner.username} title={t("of", { name: ownerName })} path={`/u/${owner.username}/vitrines/${current.id}`} label={t("share")} />}
           />
-          {await profileSocialBar({ owner, viewer, access, name: ownerName })}
+          {social}
           {current.count > 0 ? (
             <>
               <ShowcaseView
@@ -131,7 +138,7 @@ export default async function ShowcasePage({ params, searchParams }: PageProps<"
                 layout={current.layout}
                 theme={theme}
                 cards={cards}
-                owned={await ownedCardIds(viewer?.id, cardIds)}
+                owned={owned}
                 linkBase="/wiki"
                 isOwner={false}
                 preload

@@ -15,6 +15,7 @@ import { PrestigeAura } from "@/components/prestige/PrestigeAura";
 import { PrestigeBand } from "@/components/prestige/PrestigeBand";
 import { PrestigeEmakis } from "@/components/prestige/PrestigeEmakis";
 import { PrestigeSanctuary } from "@/components/prestige/PrestigeSanctuary";
+import { isFrozen } from "@/lib/account/deletion";
 import { eligibilityOf } from "@/lib/prestige/eligibility";
 import { toRoman } from "@/lib/prestige/roman";
 import { getCatalogStats } from "@/server/catalog/queries";
@@ -37,7 +38,6 @@ import { getProfileSales, getWishlist } from "@/server/collection/profile-cards"
 import { ownedCardIds } from "@/server/collection/owned";
 import { getSetting } from "@/server/settings";
 import { prisma } from "@/server/db";
-import { getPlayerDecor } from "@/server/profile/decor";
 import { getCosmeticProgress, getEarnedBadges, getProfileDecor } from "@/server/profile/progress";
 import type { Badge } from "@/lib/profile/conditions";
 import { getIncenseState } from "@/server/boosters/incense";
@@ -79,23 +79,25 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
   const { username } = await params;
   const locale = await getLocale();
   const { owner, viewer, access } = await loadProfile(username, locale);
-  const [t, tAccount, format] = await Promise.all([getTranslations("profile"), getTranslations("account"), getFormatter()]);
+  const [t, tAccount, format, onlineSeconds] = await Promise.all([
+    getTranslations("profile"),
+    getTranslations("account"),
+    getFormatter(),
+    getSetting("presence.onlineSeconds"),
+  ]);
   const name = displayName(owner.username, owner.isGuest, (code) => tAccount("guestName", { code }));
   const social = await profileSocialBar({ owner, viewer, access, name });
   // Présence : visible comme le profil lui-même (public, ou amis), jamais pour un invité
-  const presence = access.profile && !owner.isGuest ? presenceOf(owner, new Date(), await getSetting("presence.onlineSeconds")) : undefined;
+  const presence = access.profile && !owner.isGuest ? presenceOf(owner, new Date(), onlineSeconds) : undefined;
   // Admin : le pseudo mène à la fiche du joueur dans l'admin (rôle lu en session)
   const nameHref = bypassesProfilePrivacy(viewer) ? `/admin/utilisateurs/${owner.id}` : undefined;
 
   if (!access.profile) {
+    // Profil caché à ce visiteur (privé, amis seulement, banni, blocage) : le pseudo seul, comme la recherche de
+    // joueurs et les listes masquées. Ni avatar (son URL Discord désigne le compte Discord), ni cadre, couleur ou prestige.
     return (
       <PageShell>
-        <ProfileHeader
-          username={owner.username}
-          image={owner.image}
-          isGuest={owner.isGuest}
-          decor={{ ...(await getPlayerDecor(owner.id)), bio: null, title: null, badges: [] }}
-        />
+        <ProfileHeader username={owner.username} image={null} isGuest={owner.isGuest} />
         {social}
         <p className="lacquer rounded-card p-6 text-center text-text-muted">
           <span aria-hidden="true" className="mb-2 block font-seal text-3xl text-shu">秘</span>
@@ -105,32 +107,33 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[us
     );
   }
 
-  const [values, decor, showcases, themesSetting, maxShowcases] = await Promise.all([
+  // Lectures indépendantes en parallèle ; ne restent après que celles qui attendent la vitrine principale, le
+  // barème du recyclage ou le prestige
+  const [values, decor, showcases, themesSetting, maxShowcases, customize, wrappedYear, achievements, tShowcase, tWrapped, prestigeOn] = await Promise.all([
     getSetting("collection.recycleValues"),
     getProfileDecor(owner.id, locale),
     listShowcases(owner.id),
     getSetting("showcase.themes"),
     getSetting("showcase.maxPerPlayer"),
+    // Son propre profil (compte inscrit et actif : un banni ou un compte gelé ne peut rien y enregistrer) : de quoi
+    // le personnaliser
+    access.isOwner && viewer && !viewer.isGuest && !viewer.bannedAt && !isFrozen(viewer) ? customizeData(owner.id, locale) : null,
+    // Wrapped : bouton sur son propre profil, pendant la période ; succès : compteur sur son propre profil
+    access.isOwner && viewer ? wrappedTeaser(viewer) : null,
+    access.isOwner ? countUnlocked(owner.id) : null,
+    getTranslations("showcase"),
+    getTranslations("wrapped"),
+    // Prestige : bandeau et record pour un joueur qui a renaît
+    getSetting("prestige.enabled"),
   ]);
-  // Son propre profil (compte inscrit) : de quoi le personnaliser
-  const customize = access.isOwner && viewer && !viewer.isGuest ? await customizeData(owner.id, locale) : null;
-  const [featuredCards, summary, wishlist, sales, incense, tShowcase, prestigeOn, prestigeSummary] = await Promise.all([
+  const [featuredCards, summary, wishlist, sales, incense, prestigeSummary] = await Promise.all([
     showcases[0] ? getShowcaseCards(showcases[0].id, owner.id, showcases[0].layout, locale) : [],
     getCollectionSummary(owner.id, values),
     getWishlist(owner.id, locale), getProfileSales(owner.id, locale),
     // Encens : seulement sur son propre profil
     access.isOwner && viewer && !viewer.bannedAt ? getIncenseState(owner.id) : null,
-    getTranslations("showcase"),
-    // Prestige : bandeau et record pour un joueur qui a renaît
-    getSetting("prestige.enabled"),
     decor.prestige > 0 ? getPrestigeSummary(owner.id) : null,
   ]);
-  // Wrapped : bouton sur son propre profil, pendant la période ; succès : compteur sur son propre profil
-  const [wrappedYear, achievements] = await Promise.all([
-    access.isOwner && viewer ? wrappedTeaser(viewer) : null,
-    access.isOwner ? countUnlocked(owner.id) : null,
-  ]);
-  const tWrapped = await getTranslations("wrapped");
   const shelf = showcases.map((s, i) => ({
     id: s.id,
     name: s.name ?? tShowcase("untitled", { n: i + 1 }),

@@ -5,15 +5,8 @@ import { changedSettingKeys } from "@/lib/settings/form";
 import { EVENT_GAUGE_SETTING_KEYS, eventGaugeSettingsSchema, type EventGaugeSettings } from "@/lib/settings/event-gauge-form";
 import { updateEventGaugeSettings } from "@/server/actions/admin-settings";
 import { Link } from "@/i18n/navigation";
-import { Field, inputClass, NumberField, SelectField, Toggle } from "./fields";
+import { Field, inputClass, NumberField, SelectField, toLocalInput, Toggle } from "./fields";
 import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
-
-/** Date ISO → valeur d'un champ datetime-local (heure locale du navigateur de l'admin). */
-function toLocalInput(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 type NumberKey = "home.eventGauge.goal" | "home.eventGauge.refreshSeconds" | "home.eventGauge.cacheSeconds";
 type DateKey = "home.eventGauge.startsAt" | "home.eventGauge.endsAt";

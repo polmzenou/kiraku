@@ -4185,7 +4185,8 @@
         "INVALID": "Valeurs invalides (rareté ou série introuvable ?).",
         "RATE_LIMITED": "Trop d'enregistrements. Réessaie dans une minute.",
         "SLUG_TAKEN": "Cet identifiant est déjà pris.",
-        "NOT_FOUND": "Cette entrée n'existe plus."
+        "NOT_FOUND": "Cette entrée n'existe plus.",
+        "UNAVAILABLE": "Enregistrement impossible pour le moment : réessaie dans un instant."
       },
       "colors": {
         "lime": "Vert lime",

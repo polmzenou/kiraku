@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
-import { useRouter } from "@/i18n/navigation";
 import { reorderShowcasesAction } from "@/server/actions/showcases";
 import { Button } from "../ui/Button";
 
@@ -12,18 +11,15 @@ import { Button } from "../ui/Button";
  */
 export function MakeMainButton({ id, showcaseIds, short = false }: { id: string; showcaseIds: readonly string[]; short?: boolean }) {
   const t = useTranslations("showcase");
-  const router = useRouter();
   const [failed, setFailed] = useState(false);
   const [pending, startTransition] = useTransition();
+  // L'action rafraîchit déjà la page (refresh côté serveur) : pas de second rendu demandé ici. Un échec (réseau,
+  // serveur) s'affiche sous le bouton, sans page d'erreur.
   const make = () =>
     startTransition(async () => {
       setFailed(false);
-      const res = await reorderShowcasesAction({ ids: [id, ...showcaseIds.filter((other) => other !== id)] });
-      if (!res.ok) {
-        setFailed(true);
-        return;
-      }
-      router.refresh();
+      const res = await reorderShowcasesAction({ ids: [id, ...showcaseIds.filter((other) => other !== id)] }).catch(() => null);
+      if (!res?.ok) setFailed(true);
     });
   return (
     <span className="inline-flex flex-col gap-1">

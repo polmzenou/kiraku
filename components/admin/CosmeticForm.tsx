@@ -30,14 +30,19 @@ export function CosmeticForm({ initial, seriesTitle }: { initial: CosmeticInput;
 
   const save = () =>
     startTransition(async () => {
-      const res = await adminSaveCosmeticAction(draft);
+      // Erreur inattendue (réseau, base) : message sous le formulaire, sans page d'erreur
+      const res = await adminSaveCosmeticAction(draft).catch(() => null);
+      if (!res) {
+        setMessage({ tone: "error", text: t("errors.UNAVAILABLE") });
+        return;
+      }
       if (!res.ok) {
         setMessage({ tone: "error", text: t(`errors.${res.error}`) });
         return;
       }
       setMessage({ tone: "ok", text: t("saved") });
+      // L'action rafraîchit déjà la page ; une création passe sur l'adresse de modification de la nouvelle entrée
       if (!draft.id) router.replace(`/admin/cosmetiques?edit=${res.id}`);
-      else router.refresh();
     });
 
   return (

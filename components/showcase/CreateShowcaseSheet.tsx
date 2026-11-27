@@ -30,18 +30,24 @@ function CreateShowcaseSheet({ username, count, max, onClose }: { username: stri
   // Thèmes et progression du joueur, calculés à l'ouverture
   const [themes, setThemes] = useState<ThemeChoice[] | null>(null);
   useEffect(() => {
-    void myThemeChoicesAction({}).then((res) => setThemes(res.ok ? res.themes : [{ id: DEFAULT_THEME, state: "available" }]));
+    // Liste indisponible (réseau, serveur) : Sans décor seulement, plutôt qu'un chargement sans fin
+    const fallback: ThemeChoice[] = [{ id: DEFAULT_THEME, state: "available" }];
+    myThemeChoicesAction({}).then(
+      (res) => setThemes(res.ok ? res.themes : fallback),
+      () => setThemes(fallback),
+    );
   }, []);
 
   const submit = () =>
     startTransition(async () => {
       setError(null);
+      // Une action qui échoue (réseau, serveur) s'affiche dans la feuille, sans page d'erreur
       const res = await createShowcaseAction({
         name,
         layout,
         theme,
         autofill: fill === "none" ? null : { series: null, minRarity: fill === "mythic" ? "MYTHIC" : null },
-      });
+      }).catch(() => ({ ok: false as const, error: "UNAVAILABLE" as const }));
       if (!res.ok) {
         setError(res.error);
         return;

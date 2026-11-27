@@ -9,8 +9,8 @@ import { offlineFor, type Presence } from "@/lib/social/presence";
 import { PlayerName } from "../social/PlayerName";
 import { WithPresence } from "../social/PresenceDot";
 import { AvatarFrame } from "./AvatarFrame";
+import { BadgeRow } from "./BadgeRow";
 import { FeaturedAchievement, type FeaturedAchievementView } from "./FeaturedAchievement";
-import { BadgeRow } from "./ProfileCustomizeSheet";
 
 /** Ce que le joueur a choisi d'afficher (étape 12h), et le succès qu'il met en avant sous son avatar. */
 export type HeaderDecor = PlayerDecor & { bio: string | null; title: string | null; badges: Badge[]; featuredAchievement?: FeaturedAchievementView | null };

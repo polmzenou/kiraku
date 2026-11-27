@@ -13,6 +13,7 @@ import { Button } from "../ui/Button";
 import { segmentedFillClass, segmentedItemClass, segmentedTrackClass } from "../ui/Segmented";
 import { Sheet } from "../ui/Sheet";
 import { AppearOfflineToggle } from "./AppearOfflineToggle";
+import { BadgeRow } from "./BadgeRow";
 import { PrivacyForm } from "./PrivacyForm";
 
 export type ProfileChoices = {
@@ -438,22 +439,5 @@ function LockIcon() {
     <svg aria-hidden="true" viewBox="0 0 16 16" className="size-3.5 shrink-0 fill-current">
       <path d="M5 7V5a3 3 0 1 1 6 0v2h.5A1.5 1.5 0 0 1 13 8.5v5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 13.5v-5A1.5 1.5 0 0 1 4.5 7H5Zm1.5 0h3V5a1.5 1.5 0 0 0-3 0v2Z" />
     </svg>
-  );
-}
-
-/** Badges d'un joueur : sceau et nom. */
-export function BadgeRow({ badges }: { badges: readonly Badge[] }) {
-  const t = useTranslations("profile.customize");
-  return (
-    <ul className="flex flex-wrap gap-1.5" aria-label={t("badges")}>
-      {badges.map((b) => (
-        <li key={b} className={`inline-flex items-center gap-1 rounded-pill border px-2 py-0.5 text-xs font-bold ${BADGE_CLASS[b].pill}`}>
-          <span aria-hidden="true" lang="ja" className="font-seal">
-            {BADGE_KANJI[b]}
-          </span>
-          {t(`badgeNames.${b}`)}
-        </li>
-      ))}
-    </ul>
   );
 }

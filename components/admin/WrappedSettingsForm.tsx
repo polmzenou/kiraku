@@ -4,15 +4,8 @@ import { useTranslations } from "next-intl";
 import { changedSettingKeys } from "@/lib/settings/form";
 import { WRAPPED_SETTING_KEYS, wrappedSettingsSchema, type WrappedSettings } from "@/lib/settings/wrapped-form";
 import { updateWrappedSettings } from "@/server/actions/admin-settings";
-import { Field, inputClass, NumberField, Toggle } from "./fields";
+import { Field, inputClass, NumberField, toLocalInput, Toggle } from "./fields";
 import { SettingsSaveBar, useSettingsDraft } from "./SettingsSaveBar";
-
-/** Date ISO → valeur d'un champ datetime-local (heure locale du navigateur de l'admin). */
-function toLocalInput(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 type DateKey = "wrapped.opensAt" | "wrapped.closesAt";
 const short = (key: keyof WrappedSettings) => key.slice("wrapped.".length) as "enabled" | "year" | "opensAt" | "closesAt";

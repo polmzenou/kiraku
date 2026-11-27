@@ -23,8 +23,9 @@ export function ReferralTreeToggle({ hidden }: { hidden: boolean }) {
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
-            const res = await setReferralTreeHiddenAction({ hidden: !hidden });
-            setError(!res.ok);
+            // Un échec (réseau, serveur) s'affiche à côté du bouton, sans page d'erreur
+            const res = await setReferralTreeHiddenAction({ hidden: !hidden }).catch(() => null);
+            setError(!res?.ok);
           })
         }
       >
