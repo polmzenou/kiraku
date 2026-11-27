@@ -261,7 +261,7 @@ async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUs
               data: Array.from({ length: count - unopened.length }, () => ({ ownerId: userId, boosterTypeId: input.boosterTypeId, source: "ADMIN" as const, giftable: false, createdAt: now })),
             });
           } else if (count < unopened.length) {
-            await tx.sealedDrop.deleteMany({ where: { id: { in: unopened.slice(0, unopened.length - count).map((d) => d.id) }, openedAt: null } });
+            await tx.sealedDrop.deleteMany({ where: { id: { in: unopened.slice(0, unopened.length - count).map((d) => d.id) }, ownerId: userId, openedAt: null } });
           }
           if (input.mode === "ADD") {
             await giftFromTeam(tx, { kind: "BOOSTER", userId, adminId, boosterTypeId: input.boosterTypeId, quantity: input.amount, message: input.message, now });
@@ -331,7 +331,10 @@ async function mutateUnderLock(db: PrismaClient, adminId: string, input: AdminUs
             ownerId: userId, cardId: input.cardId, status: "COLLECTION", ...ORDINARY_COPY, showcaseItems: { none: {} }, auctions: { none: {} },
           }, orderBy: [{ obtainedAt: "desc" }, { id: "desc" }], take: input.amount, select: { id: true } });
           if (free.length !== input.amount) throw new AdminUserMutationError("CARDS_LOCKED");
-          await tx.userCard.deleteMany({ where: { id: { in: free.map((c) => c.id) }, ownerId: userId } });
+          // Conditionnel sur le statut, comme tout retrait d'exemplaire (transfer-guard.test.ts) : un exemplaire engagé
+          // entre la lecture et l'écriture n'est jamais supprimé, et le journal ne compte pas un retrait qui n'a pas eu lieu
+          const removed = await tx.userCard.deleteMany({ where: { id: { in: free.map((c) => c.id) }, ownerId: userId, status: "COLLECTION" } });
+          if (removed.count !== free.length) throw new AdminUserMutationError("CARDS_LOCKED");
         }
         after = {
           cardId: input.cardId, copies: copies + (input.mode === "ADD" ? input.amount : -input.amount),

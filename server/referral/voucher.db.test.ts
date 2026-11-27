@@ -110,4 +110,17 @@ describe.skipIf(!url)("bons du parrainage (base réelle)", () => {
     const second = await redeem(users[losers[0]], vouchers[losers[0]], card.other);
     expect(second.edition).toEqual({ printing: 1000, serial: 1, size: 1 });
   });
+
+  it("joueur banni (relu sous son verrou) : rien n'est versé, le bon reste à reprendre", async () => {
+    const v = await voucher(users.c, "MYTHIC_CHOICE");
+    const before = await prisma.userCard.count({ where: { ownerId: users.c } });
+    await prisma.user.update({ where: { id: users.c }, data: { bannedAt: new Date() } });
+    try {
+      expect(await outcome(redeem(users.c, v, card.mythic))).toBe("UNAVAILABLE");
+      expect((await prisma.voucher.findUniqueOrThrow({ where: { id: v }, select: { usedAt: true } })).usedAt).toBeNull();
+      expect(await prisma.userCard.count({ where: { ownerId: users.c } })).toBe(before);
+    } finally {
+      await prisma.user.update({ where: { id: users.c }, data: { bannedAt: null } });
+    }
+  });
 });

@@ -178,6 +178,14 @@ describe("mutations admin atomiques", () => {
     expect(tx.userCard.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ ownerId: "player", status: "COLLECTION", showcaseItems: { none: {} }, auctions: { none: {} } }) }));
     expect(tx.userCard.deleteMany).not.toHaveBeenCalled();
   });
+  it("ne supprime que des exemplaires encore en collection, et refuse un retrait incomplet", async () => {
+    const { tx, db } = setup();
+    tx.userCard.findMany.mockResolvedValueOnce([{ id: "c1" }, { id: "c2" }]);
+    tx.userCard.deleteMany.mockResolvedValueOnce({ count: 1 });
+    await expect(mutateAdminUserWith(db, "admin", { ...base, kind: "card", cardId: "card", mode: "REMOVE", amount: 2, message: null })).rejects.toMatchObject({ code: "CARDS_LOCKED" });
+    expect(tx.userCard.deleteMany).toHaveBeenCalledWith({ where: { id: { in: ["c1", "c2"] }, ownerId: "player", status: "COLLECTION" } });
+    expect(tx.adminLog.create).not.toHaveBeenCalled();
+  });
   it("définit les crédits d'un type existant, même inactif", async () => {
     const { tx, db } = setup();
     await mutateAdminUserWith(db, "admin", { ...base, kind: "booster", boosterTypeId: "type", mode: "ADD", amount: 7, message: null });

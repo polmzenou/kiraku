@@ -1,18 +1,20 @@
-// Choix de la carte d'un bon (parrainage v2, puis Ennichi) : le bon est verrouillé, la carte vérifiée, puis versée
-// dans la même transaction, et le bon passe utilisé. Client injecté : serveur ou tests sur base.
+// Choix de la carte d'un bon (parrainage v2, puis Ennichi) : le joueur puis le bon sont verrouillés, la carte vérifiée,
+// puis versée dans la même transaction, et le bon passe utilisé. Client injecté : serveur ou tests sur base.
 //   - « Mythique au choix » : une Mythique publiée, exemplaire ordinaire (un double si le joueur l'a déjà) ;
 //   - carte 1/1 : n'importe quelle carte publiée, gravée au numéro 1 du tirage réservé 1000, d'un seul exemplaire.
 //     Le compteur (carte, 1000) est verrouillé : deux joueurs qui choisissent la même carte passent l'un après
 //     l'autre, le second reçoit CARD_TAKEN et garde son bon.
 import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
+import { isFrozen } from "@/lib/account/deletion";
 import { ONE_OF_ONE_PRINTING, type Edition } from "@/lib/prestige/printing";
 import { voucherCardProblem, type VoucherKindKey } from "@/lib/referral/vouchers";
 import { recordDiscoveries } from "../collection/discovery";
 import { consumeWishlist } from "../collection/wishlist-core";
 import { takeChosenSerial } from "../prestige/printing-core";
 
-export type VoucherErrorCode = "NOT_FOUND" | "USED" | "CARD_UNAVAILABLE" | "NOT_MYTHIC" | "CARD_TAKEN";
+/** `UNAVAILABLE` : joueur invité, banni ou gelé, relu sous son verrou. */
+export type VoucherErrorCode = "NOT_FOUND" | "USED" | "CARD_UNAVAILABLE" | "NOT_MYTHIC" | "CARD_TAKEN" | "UNAVAILABLE";
 
 export class VoucherError extends Error {
   constructor(readonly code: VoucherErrorCode) {
@@ -39,6 +41,12 @@ export async function redeemVoucherWith(
 ): Promise<RedeemedVoucher> {
   const { userId, cardId, now } = input;
   return db.$transaction(async (tx) => {
+    // Le joueur d'abord, comme toute récompense (même ordre que la reprise « Révoquer et bannir » : les joueurs, puis
+    // leurs bons). Sans ce verrou, un choix lancé pendant la reprise créait sa carte hors de sa vue : le bon restait
+    // compté comme repris, la carte restait au banni. Banni ou gelé entre la page et le clic : rien n'est versé.
+    const [player] = await tx.$queryRaw<{ isGuest: boolean; bannedAt: Date | null; deletionRequestedAt: Date | null; anonymizedAt: Date | null }[]>`
+      SELECT "isGuest", "bannedAt", "deletionRequestedAt", "anonymizedAt" FROM "User" WHERE id = ${userId} FOR UPDATE`;
+    if (!player || player.isGuest || player.bannedAt || isFrozen(player)) throw new VoucherError("UNAVAILABLE");
     // Le bon, à ce joueur, verrouillé : deux choix du même bon passent l'un après l'autre, le second le trouve utilisé.
     // Une reprise (« Révoquer et bannir ») qui l'a supprimé avant passe aussi par ce verrou : le choix ne le trouve plus.
     const [voucher] = await tx.$queryRaw<{ kind: VoucherKindKey; usedAt: Date | null }[]>`

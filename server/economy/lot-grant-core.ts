@@ -1,10 +1,11 @@
 // Lots envoyés depuis /admin/lots : à un joueur, ou à tous par paquets (reprenable). Chaque versement
-// est sa propre transaction (grantLot + LotGrant + notification + journal des Zeni) ; la contrainte
-// unique (broadcastId, userId) garantit qu'un envoi à tous ne verse jamais deux fois au même joueur,
-// même relancé en parallèle. Client injecté : pas de server/db.ts ici.
+// est sa propre transaction (joueur verrouillé, grantLot + LotGrant + notification + journal des Zeni) ;
+// la contrainte unique (broadcastId, userId) garantit qu'un envoi à tous ne verse jamais deux fois au
+// même joueur, même relancé en parallèle. Client injecté : pas de server/db.ts ici.
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { directLotItems, directLotName, type DirectRewards } from "@/lib/economy/direct-send";
 import { writeAdminLog } from "../admin/log";
+import { lockPlayers } from "../social/lock";
 import { notify, notifyingTransaction, type OnNotified } from "../social/notify";
 import { grantLot, LotError, type LotDeps } from "./lots";
 
@@ -49,8 +50,9 @@ export async function grantLotToUserWith(
   return notifyingTransaction(
     db,
     async (tx) => {
-      const user = await tx.user.findUnique({ where: { id: input.userId }, select: { id: true } });
-      if (!user) throw new LotGrantError("NO_USER");
+      // Joueur verrouillé, comme pour toute récompense : un réglage de sa fiche (crédits ou sachets fixés à une valeur
+      // dans l'admin, sous ce même verrou) ne peut plus effacer ce lot en écrivant un compte lu avant lui
+      if (!(await lockPlayers(tx, [input.userId])).has(input.userId)) throw new LotGrantError("NO_USER");
       if ((await tx.user.count({ where: { id: input.userId, ...eligibleWhere("ALL") } })) === 0) {
         throw new LotGrantError("NOT_ELIGIBLE");
       }
@@ -214,6 +216,8 @@ export async function runLotBroadcastWith(
         await notifyingTransaction(
           db,
           async (tx) => {
+            // Même verrou qu'un envoi à un seul joueur (le joueur, puis la ligne de l'envoi)
+            await lockPlayers(tx, [userId]);
             await tx.lotGrant.create({ data: { lotId: broadcast.lotId, userId, adminId: broadcast.adminId, broadcastId: broadcast.id } });
             await grantLot(tx, userId, broadcast.lotId, { reason: "ADMIN", refId: broadcast.id }, deps, input.now);
             await notify(tx, { userId, type: "LOT_GRANTED", actorId: broadcast.adminId, refId: broadcast.id, now: input.now });
