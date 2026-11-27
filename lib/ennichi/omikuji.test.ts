@@ -66,7 +66,8 @@ describe("omikuji de l'Ennichi", () => {
       wins[d.ticket]++;
     }
     for (const w of wins) expect(w).toBeGreaterThan(60);
-  });
+    // 400 tirages par WebCrypto : ~5 s quand toute la suite tourne en parallèle, au-delà des 5 s par défaut
+  }, 30_000);
 
   it("vérification : empreintes et tirage refaits, falsification repérée", async () => {
     const tickets = ["1 · Léa", "2 · Hugo", "3 · Léa", "4 · Yuki"];
