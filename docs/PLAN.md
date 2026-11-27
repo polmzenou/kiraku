@@ -1262,6 +1262,7 @@ L'expiration et le plafond évitent qu'un banni fasse bannir exprès le wifi d'u
 
 **RGPD.** IP et identifiant d'appareil gardés 90 jours après la dernière visite (`multiAccount.retentionDays`), et tant que dure un ban, même après la suppression du compte (intérêt légitime : un ban ne doit pas se contourner en supprimant son compte). L'export des données inclut les bans venus du compte, sans la raison ni l'admin. Le cookie d'appareil figure dans le registre des cookies (rôle « sécurité »).
 
+**Comptes bannis.** Un joueur banni disparaît des listes d'amis et des demandes (l'amitié reste en base, comme pour la messagerie) et des deux classements : leurs requêtes l'excluaient déjà, la lecture retire en plus un ban postérieur au cache (`server/social/banned.ts`) et chaque ban ou levée de ban depuis l'admin vide les caches. Dans `/admin/multi-comptes`, la détection garde tous les comptes, mais la vue retire les bannis des groupes et des IP partagées, avec un rappel « Relié à N comptes bannis » (`lib/anticheat/banned-view.ts`) ; le filtre **Comptes bannis** montre les groupes qui en ont et la liste des bannis, avec le lien vers la fiche pour lever le ban.
 
 ## Import Kyara
 

@@ -5,16 +5,19 @@ import { ResponsiveTable } from "@/components/admin/ResponsiveTable";
 import { Button } from "@/components/ui/Button";
 import { inputClass, selectClass } from "@/components/ui/Field";
 import { Link } from "@/i18n/navigation";
-import { maskIp } from "@/lib/anticheat/mask";
+import { clustersFor } from "@/lib/anticheat/banned-view";
+import { maskEmail, maskIp } from "@/lib/anticheat/mask";
 import { GROUP_BAN_MAX, ipBanKey } from "@/lib/anticheat/network";
 import { z } from "@/lib/zod";
 import { requireAdminView } from "@/server/admin";
 import { bannedIpKeys, countNetworkBans } from "@/server/anticheat/network-ban-queries";
-import { sharedIps, suspectClusters } from "@/server/anticheat/queries";
+import { bannedAccounts, sharedIps, suspectClusters } from "@/server/anticheat/queries";
 import { getSetting } from "@/server/settings";
 
-const FILTERS = ["all", "device", "ip", "flow"] as const;
+// « banned » : les comptes bannis, retirés des autres vues, pour les revoir (lever un ban depuis la fiche)
+const FILTERS = ["all", "device", "ip", "flow", "banned"] as const;
 const SHOWN = 50;
+const BANNED_SHOWN = 100;
 
 const paramsSchema = z.object({
   q: z.string().trim().max(40).catch(""),
@@ -27,14 +30,16 @@ const paramsSchema = z.object({
 /**
  * Détection des multi-comptes : groupes de comptes reliés par des indices (appareil, IP, e-mails, transferts,
  * parrainage, ami unique). Ouverte au DEV en lecture, IP et e-mails masqués. L'ADMIN bannit ici un groupe entier
- * (comptes, IP et appareils) ; un ban précis se fait depuis la fiche du joueur.
+ * (comptes, IP et appareils) ; un ban précis se fait depuis la fiche du joueur. Les comptes bannis sortent des
+ * groupes et des IP (un rappel signale un compte relié à des bannis) ; le filtre « Comptes bannis » les montre.
  */
 export default async function AdminMultiAccountsPage({ searchParams }: PageProps<"/[locale]/admin/multi-comptes">) {
   const { readOnly: masked } = await requireAdminView();
   const raw = await searchParams;
   const params = paramsSchema.parse({ q: raw.q ?? "", filter: raw.filter ?? "all", guests: raw.guests, ip: raw.ip });
   const ipSearch = masked ? undefined : params.ip;
-  const [t, nb, users, format, detection, ips, cap, banCount, bannedIps] = await Promise.all([
+  const bannedMode = params.filter === "banned";
+  const [t, nb, users, format, detection, ips, cap, banCount, bannedIps, banned] = await Promise.all([
     getTranslations("admin.multiAccounts"),
     getTranslations("admin.networkBans"),
     getTranslations("admin.users"),
@@ -44,12 +49,14 @@ export default async function AdminMultiAccountsPage({ searchParams }: PageProps
     getSetting("multiAccount.sharedIpCap"),
     countNetworkBans(),
     bannedIpKeys(),
+    bannedMode ? bannedAccounts({ q: params.q, take: BANNED_SHOWN }) : null,
   ]);
   const { members, minScore } = detection;
   const query = params.q.toLowerCase();
-  const clusters = detection.clusters.filter((c) => {
-    if (query && !c.userIds.some((id) => members.get(id)?.username.toLowerCase().includes(query))) return false;
-    if (params.filter === "all") return true;
+  const isBanned = (id: string) => members.get(id)?.banned ?? false;
+  const clusters = clustersFor(detection.clusters, isBanned, bannedMode ? "banned" : "active").filter((c) => {
+    if (query && ![...c.userIds, ...c.bannedIds].some((id) => members.get(id)?.username.toLowerCase().includes(query))) return false;
+    if (params.filter === "all" || bannedMode) return true;
     const kind = params.filter === "device" ? "device" : params.filter === "ip" ? "ip" : "flow";
     return c.pairs.some((p) => p.reasons.some((r) => r.kind === kind));
   });
@@ -91,6 +98,14 @@ export default async function AdminMultiAccountsPage({ searchParams }: PageProps
                 <header className="flex flex-wrap items-center gap-2">
                   <h4 className="font-title text-base font-bold">{t("clusterTitle", { index: i + 1, count: c.userIds.length })}</h4>
                   <ScoreBadge score={c.score} label={t("score", { score: c.score })} />
+                  {!bannedMode && c.bannedIds.length > 0 && (
+                    <Link
+                      href={`/admin/multi-comptes?filter=banned&q=${encodeURIComponent(members.get(c.userIds[0])?.username ?? "")}`}
+                      className="inline-flex min-h-11 items-center text-xs font-bold text-shu underline underline-offset-2"
+                    >
+                      {t("bannedLinked", { count: c.bannedIds.length })}
+                    </Link>
+                  )}
                 </header>
                 <MemberGrid ids={c.userIds} members={members} masked={masked} />
                 {/* Liens et ban sur une ligne ; le détail ouvert ou le formulaire de ban prennent toute la largeur */}
@@ -101,7 +116,7 @@ export default async function AdminMultiAccountsPage({ searchParams }: PageProps
                       <PairList pairs={c.pairs} members={members} masked={masked} minScore={minScore} />
                     </div>
                   </details>
-                  {!masked && (
+                  {!masked && !bannedMode && c.userIds.length >= 2 && (
                     <div className="has-[input]:basis-full">
                       {c.userIds.length <= GROUP_BAN_MAX ? <GroupBanButton userIds={c.userIds} /> : <p className="text-sm text-text-muted">{nb("groupTooBig", { max: GROUP_BAN_MAX })}</p>}
                     </div>
@@ -113,6 +128,47 @@ export default async function AdminMultiAccountsPage({ searchParams }: PageProps
         )}
         {clusters.length > SHOWN && <p className="text-sm text-text-muted">{t("moreClusters", { count: clusters.length - SHOWN })}</p>}
       </section>
+
+      {banned && (
+        <section className="flex flex-col gap-3">
+          <h3 className="font-title text-xl font-bold">{t("bannedTitle", { count: banned.total })}</h3>
+          <p className="max-w-prose text-sm text-text-muted">{t("bannedIntro")}</p>
+          {banned.rows.length === 0 ? (
+            <p className="text-sm text-text-muted">{t("noBanned")}</p>
+          ) : (
+            <ResponsiveTable
+              caption={t("bannedTitle", { count: banned.total })}
+              columns={[
+                { key: "player", label: users("player"), primary: true },
+                { key: "bannedAt", label: t("bannedAt") },
+                { key: "seen", label: t("lastSeen") },
+                { key: "sheet", label: t("sheet") },
+              ]}
+              rows={banned.rows.map((b) => ({
+                id: b.id,
+                cells: {
+                  player: (
+                    <span className="flex flex-col">
+                      <span className="font-bold">{b.username}</span>
+                      <span className="text-xs text-text-muted">
+                        {b.isGuest ? t("memberStatus.guest") : b.email ? (masked ? maskEmail(b.email) : b.email) : users("noEmail")}
+                      </span>
+                    </span>
+                  ),
+                  bannedAt: format.dateTime(b.bannedAt, { dateStyle: "short", timeStyle: "short" }),
+                  seen: b.lastSeenAt ? format.relativeTime(b.lastSeenAt) : t("memberNeverSeen"),
+                  sheet: (
+                    <Link href={`/admin/utilisateurs/${b.id}`} className="inline-flex min-h-11 items-center font-bold text-link underline underline-offset-4">
+                      {t("openSheet")}
+                    </Link>
+                  ),
+                },
+              }))}
+            />
+          )}
+          {banned.total > banned.rows.length && <p className="text-sm text-text-muted">{t("moreBanned", { count: banned.total - banned.rows.length })}</p>}
+        </section>
+      )}
 
       <section className="flex flex-col gap-3">
         <h3 className="font-title text-xl font-bold">{t("ipsTitle")}</h3>
@@ -148,12 +204,13 @@ export default async function AdminMultiAccountsPage({ searchParams }: PageProps
                 ),
                 accounts: format.number(ip.accounts),
                 users: (
-                  <span className="text-xs break-all">
-                    {ip.usernames.map((u, i) => (
-                      <span key={u.id}>{i > 0 && ", "}<Link href={`/admin/utilisateurs/${u.id}`} className="underline underline-offset-2">{u.username}</Link></span>
-                    ))}
-                    {ip.accounts > ip.usernames.length && ` ${t("more", { count: ip.accounts - ip.usernames.length })}`}
-                  </span>
+                  <IpUsers
+                    // Bannis retirés de la vue par défaut (comptés à part), montrés et marqués avec le filtre « Comptes bannis »
+                    shown={bannedMode ? ip.usernames : ip.usernames.filter((u) => !u.banned)}
+                    hidden={bannedMode ? 0 : ip.usernames.filter((u) => u.banned).length}
+                    more={ip.accounts - ip.usernames.length}
+                    labels={{ banned: t("memberStatus.banned"), hidden: (count) => t("bannedHidden", { count }), more: (count) => t("more", { count }) }}
+                  />
                 ),
               },
             }))}
@@ -161,5 +218,34 @@ export default async function AdminMultiAccountsPage({ searchParams }: PageProps
         )}
       </section>
     </div>
+  );
+}
+
+/** Comptes d'une IP partagée : liens vers leur fiche, bannis en rouge, et ce qui est caché ou en plus. */
+function IpUsers({
+  shown,
+  hidden,
+  more,
+  labels,
+}: {
+  shown: { id: string; username: string; banned: boolean }[];
+  hidden: number;
+  more: number;
+  labels: { banned: string; hidden: (count: number) => string; more: (count: number) => string };
+}) {
+  return (
+    <span className="text-xs break-all">
+      {shown.map((u, i) => (
+        <span key={u.id}>
+          {i > 0 && ", "}
+          <Link href={`/admin/utilisateurs/${u.id}`} className={`underline underline-offset-2 ${u.banned ? "text-shu" : ""}`}>
+            {u.username}
+          </Link>
+          {u.banned && ` (${labels.banned})`}
+        </span>
+      ))}
+      {hidden > 0 && ` ${labels.hidden(hidden)}`}
+      {more > 0 && ` ${labels.more(more)}`}
+    </span>
   );
 }
