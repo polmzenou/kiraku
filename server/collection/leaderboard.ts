@@ -4,6 +4,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { decorFromColumns, type PlayerDecor } from "@/lib/profile/decor";
 import { prisma } from "../db";
 import { decorColumns, type DecorColumns } from "../profile/decor";
+import { withoutBanned } from "../social/banned";
 
 // Classement des collectionneurs : prestige (renaissances), puis cartes uniques possédées (exemplaires en vente
 // compris), puis Mythiques uniques. Seuls les profils publics de joueurs non bannis et non retirés par l'admin y figurent,
@@ -49,5 +50,7 @@ const loadTopCollectors = unstable_cache(
 
 /** Les `limit` premiers collectionneurs (50 au plus) ; `raw` : sans les malus de l'admin (rôle DEV). */
 export async function getTopCollectors(limit = LEADERBOARD_SIZE, { raw = false }: { raw?: boolean } = {}): Promise<Collector[]> {
-  return (await loadTopCollectors(raw)).slice(0, limit);
+  // Un joueur banni depuis le calcul en cache sort tout de suite ; les rangs se resserrent derrière lui
+  const shown = await withoutBanned(await loadTopCollectors(raw));
+  return shown.slice(0, limit).map((c, i) => ({ ...c, rank: i + 1 }));
 }

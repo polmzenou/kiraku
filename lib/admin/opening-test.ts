@@ -1,6 +1,9 @@
 import type { SealedKind } from "@/lib/boosters/draw";
 import type { CardView, DroppedSealedView, OpenedBoosterView, OpenedCardView } from "@/lib/boosters/view";
 import type { Rarity } from "@/lib/catalog/rarity";
+import { cellCount } from "@/lib/fresco/grid";
+import { earnedRewards } from "@/lib/fresco/progress";
+import type { FrescoDropView } from "@/lib/fresco/view";
 
 // Banc de test de l'ouverture (admin) : tirages factices, jamais envoyés au serveur ni enregistrés.
 
@@ -107,4 +110,32 @@ export function testBoosters({ pool, scenario, count, cardsPerBooster, run }: {
       cards,
     };
   });
+}
+
+/** Fresque du banc de test (admin seulement, brouillons compris) : tous ses fragments, pour l'aperçu. */
+export type OpeningTestFresco = { id: string; name: string; cols: number; rows: number; imageUrl: string; pieces: { position: number; imageUrl: string }[] };
+
+/**
+ * Fragment factice glissé dans le dernier booster : à chaque ouverture la fresque avance d'une case (dans
+ * l'ordre), si bien qu'on voit passer une ligne, une colonne, puis la fresque complète.
+ */
+export function testFrescoDrop(fresco: OpeningTestFresco, run: number): FrescoDropView<OpenedCardView> {
+  const grid = { cols: fresco.cols, rows: fresco.rows };
+  const total = cellCount(grid);
+  const position = (run - 1) % total;
+  const before = new Set(Array.from({ length: position }, (_, p) => p));
+  const owned = fresco.pieces.filter((p) => p.position <= position);
+  return {
+    fresco: {
+      id: fresco.id,
+      name: fresco.name,
+      ...grid,
+      pieces: owned,
+      fullImageUrl: owned.length === total ? fresco.imageUrl : null,
+      spoiler: false,
+      spoilerKey: null,
+    },
+    position,
+    rewards: earnedRewards(before, [position], grid).map((r) => ({ ...r, lotName: null, reward: null })),
+  };
 }

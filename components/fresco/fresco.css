@@ -1,0 +1,99 @@
+/* Fresques 絵 : la grande image et ses fragments (préfixe fr-). Fragments placés en pourcentage sur la grille,
+   avec un débord d'un demi-pixel pour qu'aucun joint ne se voie entre deux voisins. Cases manquantes :
+   transparentes, cernées d'un liseré très léger pour lire la grille. Animations : transform et opacity. */
+
+.fr-board {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--fr-cols) / var(--fr-rows);
+}
+
+.fr-cell {
+  position: absolute;
+  left: calc(var(--fr-col) * 100% / var(--fr-cols));
+  top: calc(var(--fr-row) * 100% / var(--fr-rows));
+  width: calc(100% / var(--fr-cols));
+  height: calc(100% / var(--fr-rows));
+}
+.fr-cell[data-owned] {
+  /* Débord d'un demi-pixel de chaque côté : les fragments voisins se recouvrent, la fresque reste d'un seul tenant */
+  left: calc(var(--fr-col) * 100% / var(--fr-cols) - 0.5px);
+  top: calc(var(--fr-row) * 100% / var(--fr-rows) - 0.5px);
+  width: calc(100% / var(--fr-cols) + 1px);
+  height: calc(100% / var(--fr-rows) + 1px);
+  overflow: hidden;
+}
+.fr-cell[data-missing]::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px dashed color-mix(in srgb, var(--color-text-muted) 28%, transparent);
+  border-radius: 2px;
+}
+.fr-cell[data-fresh] {
+  z-index: 1;
+}
+.fr-cell img,
+.fr-full img {
+  object-fit: cover;
+}
+.fr-full {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Fragment qui vient d'arriver (révélation, aperçu) : il se pose sur sa case */
+@media (prefers-reduced-motion: no-preference) {
+  .fr-cell[data-fresh] {
+    animation: fr-land 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}
+@keyframes fr-land {
+  from {
+    opacity: 0;
+    transform: translateY(-18%) scale(1.18);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Dans la scène d'une vitrine : la fresque tient dans le format du fond (3:4, puis 16:9), sans le rogner */
+.fr-stage-board {
+  z-index: 1;
+  width: 100%;
+  margin-inline: auto;
+}
+.vt-stage[data-media] .fr-stage-board {
+  --fit-h: calc((100cqw + 2 * var(--pad-x)) * 4 / 3 - var(--pad-t) - var(--pad-b));
+  max-width: min(100cqw, calc(var(--fit-h) * var(--fr-cols) / var(--fr-rows)));
+}
+@media (min-width: 48rem) {
+  .fr-stage-board {
+    max-width: 36rem;
+  }
+  .vt-stage[data-media] .fr-stage-board {
+    --fit-h: calc((100cqw + 2 * var(--pad-x)) * 9 / 16 - var(--pad-t) - var(--pad-b));
+    max-width: min(36rem, 100cqw, calc(var(--fit-h) * var(--fr-cols) / var(--fr-rows)));
+  }
+}
+
+/* Mini-carte de la grille (révélation, liste des fresques) : une pastille par case */
+.fr-map {
+  display: grid;
+  grid-template-columns: repeat(var(--fr-cols), 1fr);
+  gap: 3px;
+  aspect-ratio: var(--fr-cols) / var(--fr-rows);
+}
+.fr-map > span {
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--color-text-muted) 18%, transparent);
+}
+.fr-map > span[data-owned] {
+  background: var(--color-kin);
+}
+.fr-map > span[data-fresh] {
+  background: var(--color-shu);
+}

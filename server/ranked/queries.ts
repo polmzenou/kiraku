@@ -11,6 +11,7 @@ import { prisma } from "../db";
 import { lotViews, type LotView } from "../economy/lot-view";
 import { decorColumns, type DecorColumns } from "../profile/decor";
 import { getSetting } from "../settings";
+import { withoutBanned } from "../social/banned";
 import { currentSeasonWith, rollSeasonWith, type SeasonRow } from "./ranked-core";
 
 // Lectures du classé. La saison se clôt paresseusement (affichage de /combat, entrée en file
@@ -150,7 +151,8 @@ const loadRankedTop = unstable_cache(
 );
 
 export async function getRankedLeaderboard(r: RankedRules): Promise<RankedEntry[]> {
-  const rows = await loadRankedTop(Math.max(100, r.grandChampion.top));
+  // Un joueur banni depuis le calcul en cache (60 s) n'apparaît plus
+  const rows = await withoutBanned(await loadRankedTop(Math.max(100, r.grandChampion.top)));
   return rows
     .filter((row) => row.public)
     .map((row) => {
@@ -219,7 +221,8 @@ export async function getDivisionBoard(userId: string, rank: Pick<RankView, "tie
     // Le joueur toujours listé, même privé ou hors des premiers (lecture non mise en cache)
     prisma.$queryRaw<DivisionRow[]>`${divisionQuery(min, max, grand, r.grandChampion)} WHERE division.id = ${userId}`,
   ]);
-  const all = self && !rows.some((row) => row.id === userId) ? [...rows, self] : rows;
+  const fresh = await withoutBanned(rows);
+  const all = self && !fresh.some((row) => row.id === userId) ? [...fresh, self] : fresh;
   const toEntry = (row: DivisionRow): DivisionEntry => {
     const at = rankOf(row.pc, grand, r);
     return {

@@ -4,6 +4,12 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { PageShell } from "@/components/PageShell";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { NewCardsView, type ReleaseView } from "@/components/wiki/NewCardsView";
+import { NewFrescoesView } from "@/components/wiki/NewFrescoesView";
+import { NewsTabs } from "@/components/wiki/NewsTabs";
+import { hasPublishedFresco } from "@/server/fresco/queries";
+import { newFrescoes } from "@/server/fresco/news";
+import { getCurrentUser } from "@/server/user";
+import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { byRarityThenName, type CardRelease } from "@/lib/catalog/releases";
 import { isTopTier } from "@/lib/catalog/tiers";
@@ -34,8 +40,13 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/wiki/nou
   };
 }
 
-/** Nouvelles cartes : la dernière sortie de l'admin (révélée), où la tirer, et les sorties précédentes. */
-export default async function NewCardsPage() {
+/**
+ * Nouvelles cartes : la dernière sortie de l'admin (révélée), où la tirer, et les sorties précédentes. Dès la
+ * première fresque publiée, un onglet « Nouvelles fresques » s'ajoute (?onglet=fresques) ; avant, rien ne s'en voit.
+ */
+export default async function NewCardsPage({ searchParams }: PageProps<"/[locale]/wiki/nouveautes">) {
+  const [{ onglet }, frescoOn] = await Promise.all([searchParams, hasPublishedFresco()]);
+  if (frescoOn && onglet === "fresques") return <FrescoesTab />;
   const [locale, releases, badge, timeZone, definitions, tMeta, tWiki] = await Promise.all([
     getLocale(),
     getCardReleases(),
@@ -96,7 +107,29 @@ export default async function NewCardsPage() {
         badgeUntil={badge?.until ?? null}
         timeZone={timeZone}
         locale={locale}
+        tabs={frescoOn ? <NewsTabs current="cards" /> : undefined}
       />
+    </PageShell>
+  );
+}
+
+/** Onglet « Nouvelles fresques » : les fresques publiées et la progression du lecteur. */
+async function FrescoesTab() {
+  const [locale, viewer, tWiki] = await Promise.all([getLocale(), getCurrentUser(), getTranslations("wiki")]);
+  const { frescoes, progress } = await newFrescoes(viewer?.id ?? null, locale);
+  return (
+    <PageShell>
+      <div className="wiki-content flex min-w-0 flex-col gap-6">
+        <nav aria-label={tWiki("breadcrumb")} className="-mb-2 flex flex-wrap items-center gap-2 text-xs text-text-muted">
+          <Link href="/wiki" className="inline-flex min-h-11 items-center text-text-muted underline-offset-4 hover:text-text hover:underline">
+            {tWiki("title")}
+          </Link>
+          <span aria-hidden="true">/</span>
+          <span className="text-text">{tWiki("newCards.title")}</span>
+        </nav>
+        <NewsTabs current="frescoes" />
+        <NewFrescoesView frescoes={frescoes} progress={progress} guest={!viewer} />
+      </div>
     </PageShell>
   );
 }

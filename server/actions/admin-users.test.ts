@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ getAdmin: vi.fn(), mutate: vi.fn(), limit: vi.fn(), refresh: vi.fn(), updateTag: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), remove: vi.fn() }));
+const mocks = vi.hoisted(() => ({ getAdmin: vi.fn(), mutate: vi.fn(), limit: vi.fn(), refresh: vi.fn(), updateTag: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), remove: vi.fn(), boards: vi.fn() }));
 vi.mock("../admin", () => ({ getAdmin: mocks.getAdmin }));
 vi.mock("../db", () => ({ prisma: { card: { findFirst: mocks.findFirst, findMany: mocks.findMany } } }));
 vi.mock("../ratelimit", () => ({ rateLimit: mocks.limit }));
 vi.mock("next/cache", () => ({ refresh: mocks.refresh, updateTag: mocks.updateTag }));
 vi.mock("../collection/leaderboard", () => ({ LEADERBOARD_TAG: "leaderboard" }));
+vi.mock("../social/ban-caches", () => ({ refreshLeaderboardsAfterBan: mocks.boards }));
 vi.mock("../social/reviews", () => ({ REVIEWS_TAG: "reviews" }));
 vi.mock("../market/queries", () => ({ pushLater: vi.fn() }));
 // Clé des empreintes du parrainage (module serveur) : sans effet ici, la suppression est simulée
@@ -53,7 +54,14 @@ describe("frontière des actions admin utilisateurs", () => {
     expect(await mutateAdminUserAction(input)).toEqual({ ok: true });
     expect(mocks.mutate).toHaveBeenCalledWith(expect.anything(), "admin", input, expect.any(Function));
     expect(mocks.updateTag).toHaveBeenCalledWith("leaderboard");
+    expect(mocks.boards).not.toHaveBeenCalled();
     expect(mocks.refresh).toHaveBeenCalledOnce();
+  });
+  it("un changement du compte (ban ou levée) recalcule les deux classements", async () => {
+    const account = { userId: "player", reason: "Triche", kind: "account", username: "joueur", role: "USER", banned: true, profileVisibility: "PUBLIC", showCollection: true };
+    expect(await mutateAdminUserAction(account)).toEqual({ ok: true });
+    expect(mocks.boards).toHaveBeenCalledOnce();
+    expect(mocks.updateTag).toHaveBeenCalledWith("reviews");
   });
   it("donne priorité à un numéro AniList exact, même hors catalogue", async () => {
     const card = { id: "card", name: "Levi", anilistId: 456, publicId: 456, rank: null, rarity: "MYTHIC", imageUrl: "https://s4.anilist.co/card.jpg", series: { titleRomaji: "Attack on Titan" } };

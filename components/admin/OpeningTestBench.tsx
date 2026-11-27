@@ -6,7 +6,9 @@ import {
   OPENING_TEST_SCENARIOS,
   testBoosters,
   testDrop,
+  testFrescoDrop,
   testSealedBooster,
+  type OpeningTestFresco,
   type OpeningTestPool,
   type OpeningTestScenario,
 } from "@/lib/admin/opening-test";
@@ -27,16 +29,21 @@ export function OpeningTestBench({
   pool,
   initialState,
   sealedTypes,
+  frescoes = [],
 }: {
   types: OpeningType[];
   pool: OpeningTestPool;
   initialState: BoosterState;
   sealedTypes: Partial<Record<SealedKind, SealedDisplay>>;
+  /** Fresques à faire tomber (admin seulement, brouillons compris) : un fragment dans le dernier booster. */
+  frescoes?: OpeningTestFresco[];
 }) {
   const t = useTranslations("admin.openingTest");
   const id = useId();
   const [slug, setSlug] = useState(types[0]?.slug ?? "");
   const [scenario, setScenario] = useState<OpeningTestScenario>("all");
+  const [frescoId, setFrescoId] = useState("");
+  const fresco = frescoes.find((f) => f.id === frescoId) ?? null;
   const run = useRef(0);
   const type = types.find((x) => x.slug === slug) ?? types[0];
 
@@ -49,9 +56,11 @@ export function OpeningTestBench({
       // Scénario de chute : le dernier booster se transforme en sachet scellé
       const drop = testDrop(scenario, run.current);
       const boosters = testBoosters({ pool, scenario, count: drop ? count - 1 : count, cardsPerBooster: type?.cards ?? 5, run: run.current });
+      // Fresque choisie : un fragment glissé dans le dernier booster, la fresque avance d'une case à chaque ouverture
+      if (fresco && boosters.length > 0) boosters[boosters.length - 1] = { ...boosters[boosters.length - 1], fresco: testFrescoDrop(fresco, run.current) };
       return { ok: true, boosters, drops: drop ? [{ ...drop, position: count - 1 }] : [], state: initialState, featuredCount: 0, zeniSpent: 0, credits: 0 };
     },
-    [pool, scenario, type?.cards, initialState],
+    [pool, scenario, type?.cards, initialState, fresco],
   );
 
   const openSealed = useCallback(
@@ -98,11 +107,26 @@ export function OpeningTestBench({
           </div>
         </fieldset>
       </div>
+      {frescoes.length > 0 && (
+        <div className="flex max-w-sm flex-col gap-1.5">
+          <label htmlFor={`${id}-fresco`} className="text-sm font-bold">
+            {t("fresco")}
+          </label>
+          <select id={`${id}-fresco`} className={input} value={frescoId} onChange={(e) => setFrescoId(e.target.value)}>
+            <option value="">{t("noFresco")}</option>
+            {frescoes.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <p className="text-xs text-text-muted">{t("hint")}</p>
 
       {/* Nouvelle scène à chaque changement de booster ou de scénario */}
       <OpeningStage
-        key={`${type.slug}-${scenario}`}
+        key={`${type.slug}-${scenario}-${frescoId}`}
         type={type}
         initialState={initialState}
         isGuest={false}

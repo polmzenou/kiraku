@@ -21,6 +21,9 @@ export type ShowcaseSummary = {
   sortOrder: number;
   /** Cartes en vitrine. */
   count: number;
+  /** Fresque mise en avant (mini-navigation « Cartes · Fresque ») et vue ouverte d'abord. */
+  frescoId: string | null;
+  frescoFirst: boolean;
 };
 
 /** Vitrines d'un joueur, dans leur ordre (la première est à l'honneur). */
@@ -34,10 +37,21 @@ export async function listShowcases(ownerId: string): Promise<ShowcaseSummary[]>
       layout: true,
       theme: true,
       sortOrder: true,
+      frescoId: true,
+      frescoFirst: true,
       _count: { select: { items: { where: { userCard: { ownerId } } } } },
     },
   });
-  return rows.map((r) => ({ id: r.id, name: r.name, layout: storedLayout(r.layout), theme: r.theme, sortOrder: r.sortOrder, count: r._count.items }));
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    layout: storedLayout(r.layout),
+    theme: r.theme,
+    sortOrder: r.sortOrder,
+    count: r._count.items,
+    frescoId: r.frescoId,
+    frescoFirst: r.frescoFirst,
+  }));
 }
 
 /** Cartes d'une vitrine, case par case (null = vide), sur la capacité de sa disposition. */

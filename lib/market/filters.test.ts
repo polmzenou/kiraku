@@ -10,13 +10,13 @@ import {
 describe("filtres du marché", () => {
   it("retombe sur les valeurs par défaut", () => {
     expect(parseMarketParams({})).toEqual(DEFAULT_MARKET_PARAMS);
-    expect(parseMarketParams({ onglet: "x", tri: "y", rarete: "SUPER", min: "-3", max: "abc" })).toEqual(DEFAULT_MARKET_PARAMS);
+    expect(parseMarketParams({ onglet: "x", tri: "y", rarete: "SUPER", min: "-3", max: "abc", possession: "owned" })).toEqual(DEFAULT_MARKET_PARAMS);
   });
 
   it("lit onglet, tri, rareté, prix et achat immédiat", () => {
     expect(
-      parseMarketParams({ onglet: "bidding", tri: "priceDesc", rarete: "MYTHIC", min: "10", max: "500", immediat: "1" }),
-    ).toEqual({ tab: "bidding", sort: "priceDesc", rarity: "MYTHIC", q: "", minPrice: 10, maxPrice: 500, buyout: true });
+      parseMarketParams({ onglet: "bidding", tri: "priceDesc", rarete: "MYTHIC", min: "10", max: "500", immediat: "1", possession: "manquantes" }),
+    ).toEqual({ tab: "bidding", sort: "priceDesc", rarity: "MYTHIC", q: "", minPrice: 10, maxPrice: 500, buyout: true, possession: "missing" });
   });
 
   it("normalise la recherche et remet les prix dans l'ordre", () => {
@@ -30,7 +30,8 @@ describe("filtres du marché", () => {
   });
 
   it("aller-retour par l'URL", () => {
-    const p = parseMarketParams({ onglet: "selling", tri: "priceAsc", rarete: "RARE", q: "luffy", min: "5", immediat: "1" });
+    const p = parseMarketParams({ onglet: "selling", tri: "priceAsc", rarete: "RARE", q: "luffy", min: "5", immediat: "1", possession: "acquises" });
+    expect(p.possession).toBe("owned");
     expect(parseMarketParams(Object.fromEntries(marketSearchParams(p)))).toEqual(p);
     expect(marketSearchParams(DEFAULT_MARKET_PARAMS).toString()).toBe("");
   });

@@ -599,6 +599,10 @@ La cote d'une carte est le **prix médian** de ses ventes terminées, enchères 
 
 Aucune table dédiée : tout se calcule depuis `Auction` et `BuyOrder` (`lib/market/quotes.ts` pour la logique, `server/market/quotes.ts` pour les lectures, cache de 5 minutes).
 
+### Filtre « acquises »
+
+Partout où le marché filtre, un filtre **Toutes · Acquises · Non acquises** (`?possession=acquises|manquantes`, `lib/market/possession.ts`). Une carte est acquise dès que le joueur en a un exemplaire, quel que soit son statut : la même règle que le badge « Acquise ». Ventes (Tout et Mes enchères ; absent de Mes ventes, où tout est au vendeur) dans le formulaire GET, avis de recherche en liens à côté du tri, échanges en puces qui se combinent avec « Je peux donner » et « Mes offres ». Côté serveur, une seule condition `card.copies some/none { ownerId }` (`server/market/possession.ts`). L'ancien filtre d'échange « Que je n'ai pas » (`filtre=missing`) vaut « Non acquises ».
+
 ## Combat 1v1
 
 Duel **joué en direct**, façon Hearthstone : chaque joueur agit pendant son tour, le serveur arbitre tout. Trois façons de jouer : **code ami** (salle privée, non classée), **exhibition** (file d'attente, non classée) et **classé** (file d'attente, étape 9b). Personne en vue après `battle.queueSeconds` (20 s) : un **bot** prend la place, affiché comme tel, avec une équipe de même rareté que celle du joueur, différente à chaque fois.
@@ -752,6 +756,19 @@ Concours de la plus belle vitrine, sur `/event` : la page de l'event en cours, q
 - **Résultats** : à la clôture seulement. Classement par votes (votants non bannis), à égalité la vitrine qui a atteint son score la première, puis la plus ancienne inscription (`rankEntries`). Podium du top 3 (金 銀 銅) sur `/event` et dans la section des classements de l'accueil ; pendant l'event, l'accueil montre une invitation. Entrée « Event » dans les menus « Plus » quand l'event est allumé.
 - **Admin** (`/admin/evenement/vitrines`) : interrupteur, édition, dates, minimum de cartes, taille des pages, aperçu de `/event` même caché, inscriptions avec leurs votes en direct et retrait de modération (`SHOWCASE_EVENT_ENTRY_REMOVE` dans `AdminLog`).
 - **Code** : règles pures dans `lib/event/showcase.ts`, écritures sous verrou du joueur dans `server/event/showcase-core.ts`, lectures dans `server/event/showcase-queries.ts`, actions dans `server/actions/showcase-event.ts`. Anonymisation et export « Mes données » couvrent inscriptions et votes. Pas de lot automatique pour les gagnants : l'admin les envoie depuis les lots.
+
+## Fresques 絵
+
+Une grande image découpée en **4 colonnes × 3 lignes** (image 4:3, fragments carrés). Ce n'est pas une rareté de carte : un fragment n'a ni stats, ni combat, ni recyclage, ni marché. C'est un objet à part, au sceau 絵, glissé dans un booster en plus de ses cartes.
+
+- **Chute** : un jet par booster enregistré (stock, Zeni, crédit ou sachet scellé ; jamais un booster garanti, un lot ou une mission), à `fresco.dropRate` points de base (550, soit 1 booster sur 18 : la chance qu'une des 4 cartes soit une Épique à 1,4 %). La fresque est tirée au poids (`Fresco.dropWeight`) parmi les publiées qui tombent de ce booster (`boosterTypeIds`, vide = tous) et que le joueur n'a pas finies, puis un fragment qui lui manque. **Jamais de doublon** : 12 fragments suffisent (environ 220 boosters par fresque seule en jeu), et une fresque finie ne tombe plus. Interrupteur `fresco.enabled`.
+- **Lots** : chaque fresque choisit quatre lots facultatifs, versés une seule fois par joueur : chaque nouveau fragment, chaque ligne remplie, chaque colonne remplie, la fresque complète. `FrescoReward` (clé joueur, fresque, type, index) rend le versement idempotent ; les lots passent par `grantLot` (`CoinReason.FRESCO`) après le débit des boosters, dans la même transaction, sous le verrou du joueur.
+- **Ouverture** : après les cartes, chaque fragment se pose sur sa case de la fresque, avec la progression, le tampon « Ligne complète », « Colonne complète » ou 完, et le contenu des lots (cartes révélées comme au sortir d'un booster) ; rangée « Fragments de fresque » dans le récap (`components/opening/FrescoFragmentReveal.tsx`, chargé à la demande).
+- **Vitrine** : le propriétaire choisit, dans le mode édition de la vitrine (bouton « Fresque »), la fresque qu'il met en avant et la vue ouverte d'abord (`Showcase.frescoId`, `frescoFirst`). À côté de « Vitrines », une mini-navigation **Cartes · Fresque** bascule entre les deux vues, sur le même décor. Complète, la fresque s'affiche comme l'image d'origine ; sinon seuls les fragments possédés, les cases manquantes restent transparentes.
+- **Nouveautés** : onglet **Nouvelles fresques** (`/wiki/nouveautes?onglet=fresques`) dès la première publication : aperçu flouté de 48 px (jamais l'image), boosters, lots, progression du lecteur, badge « Nouveau » pendant `fresco.newHours`. Tag `NEW_FRESCO` et sceau 絵 pour les bannières de l'accueil.
+- **Pas de spoil** : brouillon invisible de tous (ni chute, ni onglet, ni bouton, ni image) ; `hasPublishedFresco()` conditionne chaque entrée. Un joueur ne reçoit que les URL de ses fragments, l'image entière une fois la fresque complète. Images découpées à l'envoi sous des noms aléatoires (`frescoes/<uuid>`, suffixe aléatoire) : aucun fragment ne se devine. Admin seulement (pas le DEV), banc de test compris. Mode spoiler comme une carte (`Fresco.spoiler`, univers).
+- **Admin** (`/admin/fresques`) : réglages et chances affichées, création, éditeur avec dépôt d'image découpée dans le navigateur (cadrage 4:3, aperçu immédiat), redécoupée par le serveur avec sharp (`server/fresco/cut.ts`, 2400 × 1800 au plus, 1200 × 900 au moins), lots, boosters, poids, spoiler, et aperçu en direct avec les composants des joueurs (profil en Téléphone ou Ordinateur, Yoru ou Washi, ouverture, Nouveautés), cases à cocher pour simuler ce que le joueur possède. Publier (il faut les 12 fragments), archiver (ne tombe plus, les détenteurs la gardent), supprimer un brouillon jamais distribué. Une fresque publiée ne change plus d'image. Scénario « Fragment de fresque » dans `/admin/test-ouverture`. Les lots d'une fresque comptent comme partagés pour `/admin/parrainage/lots`.
+- **Données** : `Fresco`, `FrescoPiece`, `UserFrescoPiece`, `FrescoReward` (migration `fresques`, uniquement additive). Logique pure dans `lib/fresco/` (grille, progression, tirage, chances), écritures dans `server/fresco/award-core.ts` et `admin-core.ts`. Les fragments restent au prestige et suivent l'export « Mes données ».
 
 ## Expéditions
 
@@ -1079,6 +1096,7 @@ Récap personnel de l'année, ouvert en décembre : boosters ouverts (dorés, di
 | Fonctionnalités | Interrupteurs : casino (visible ou caché), boutique, paiement Stripe, classé, marché, cadeaux |
 | Casino | `/admin/casino` : date d'ouverture, badge et cérémonie, garde-fous et raretés du pile ou face, santé du séquestre, statistiques, retrait motivé d'une table (voir « Casino ») |
 | Vitrines | `/admin/vitrines` : vitrines par joueur, et pour chaque thème son statut (Disponible, Arrive prochainement : visible flouté avec un cadenas, Masqué), sa condition de déblocage et le nombre de vitrines qui l'utilisent |
+| Fresques | `/admin/fresques` : chute (interrupteur, chance par booster), fresques (image découpée, lots, boosters, spoiler, aperçu en direct), publication et archivage (voir « Fresques 絵 ») ; admin seulement |
 | Event vitrines | `/admin/evenement/vitrines` : allumer ou cacher l'event, édition, dates, minimum de cartes, vitrines par page, inscriptions et votes en direct, retrait d'une inscription (voir « Event vitrines ») |
 | Boutique | Articles (boosters, packs, bannières), prix en Zeni, prix en euros et id de prix Stripe, dates de disponibilité |
 | Boosters spéciaux | Bannières vedettes (cartes mises en avant, pitié vedette à 100, prix, dates), fréquence du doré (tous les 10), chance du divin (1/2 000) |
@@ -1243,6 +1261,8 @@ L'expiration et le plafond évitent qu'un banni fasse bannir exprès le wifi d'u
 **Admin.** Fiche joueur (bloc « Bannir le réseau » : IP et appareils précochés s'ils ne coupent personne d'autre, avec ou sans le compte), groupe suspect de `/admin/multi-comptes` (« Bannir ce groupe », 20 comptes au plus), liste `/admin/multi-comptes/bans` (origine, accès bloqués, lever, rendre définitif). Écritures dans `server/anticheat/network-ban-core.ts`, sous verrou, admin revérifié ; le DEV voit tout en lecture seule, IP masquées.
 
 **RGPD.** IP et identifiant d'appareil gardés 90 jours après la dernière visite (`multiAccount.retentionDays`), et tant que dure un ban, même après la suppression du compte (intérêt légitime : un ban ne doit pas se contourner en supprimant son compte). L'export des données inclut les bans venus du compte, sans la raison ni l'admin. Le cookie d'appareil figure dans le registre des cookies (rôle « sécurité »).
+
+**Comptes bannis.** Un joueur banni disparaît des listes d'amis et des demandes (l'amitié reste en base, comme pour la messagerie) et des deux classements : leurs requêtes l'excluaient déjà, la lecture retire en plus un ban postérieur au cache (`server/social/banned.ts`) et chaque ban ou levée de ban depuis l'admin vide les caches. Dans `/admin/multi-comptes`, la détection garde tous les comptes, mais la vue retire les bannis des groupes et des IP partagées, avec un rappel « Relié à N comptes bannis » (`lib/anticheat/banned-view.ts`) ; le filtre **Comptes bannis** montre les groupes qui en ont et la liste des bannis, avec le lien vers la fiche pour lever le ban.
 
 ## Import Kyara
 
@@ -1920,6 +1940,8 @@ Construis dans cet ordre : chaque étape est jouable seule et sert de base à la
     - **16e Finitions.** Export et anonymisation RGPD, annonces Discord, fiche joueur de l'admin, `docs/MISE-EN-PRODUCTION.md`, essai sur un vrai téléphone en 375 px, lint, typecheck et tests.
 17. **Import Kyara** — voir « Import Kyara ». 17-0 test des routes de Kyara avec deux vrais comptes (`docs/KYARA-IMPORT.md`), 17a logique pure et réglages, 17b schéma, migration et notifications, 17c cœurs serveur, RGPD et tests en base, 17d accès de l'équipe et réglages, 17e côté joueur, 17f outillage de l'équipe (file, favori, réception, fiche), 17g textes légaux et documentation, 17h version simplifiée (demande sans adresse, favori à clé par membre, versement dès la lecture, « À vérifier » pour les cas douteux).
 18. **Parrainage v2 et Ennichi** — voir « Parrainage v2 et événement Ennichi ». Prérequis : bans réseau en production. Codé sur `tristan-dev` en lots (2026-11-24) : 18a étapes du filleul, paliers, grand-parrainage et anti-farm (confiance, appareil commun, score, verrous de transfert, reprise, file « À vérifier ») ; 18b code sur tous les liens partagés, arrivée en pochibukuro, aperçus ; 18c arbre des liens, code perso, bon « Mythique au choix », carte 1/1, Ambassadeur proposé ; 18d Ennichi (lanternes, banzuke, omikuji, bonus, admin) ; 18e annonce, règlement et textes légaux, documentation. Restent l'essai sur un vrai téléphone et le lancement (`docs/MISE-EN-PRODUCTION.md`, « Lancement du parrainage v2 et de l'Ennichi »).
+
+19. **Fresques et filtre « acquises »** — voir « Fresques 絵 » et « Filtre « acquises » ». Migration `fresques` à appliquer sur le VPS au déploiement.
 
 Hors de ce plan : Stripe, après un avis juridique.
 

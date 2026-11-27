@@ -3,10 +3,12 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { BuyOrderRules } from "@/lib/market/buy-orders";
 import type { CardView } from "@/lib/boosters/view";
 import { ORDINARY_COPY } from "@/lib/collection/copies";
+import type { Possession } from "@/lib/market/possession";
 import { cardViews } from "../boosters/display";
 import { namedPlayerSelect, publicNamesFor } from "../collection/public-names";
 import { prisma } from "../db";
 import { getSetting } from "../settings";
+import { possessionCardWhere } from "./possession";
 
 // Lectures des avis de recherche. Un avis échu est masqué dès son échéance (le cron le ferme et
 // rembourse ensuite) ; les avis d'un acheteur banni ou en cours de suppression ne sont pas proposés.
@@ -137,12 +139,27 @@ export async function myOrders(userId: string, locale: string, now = new Date())
   return { open: openViews, closed: closedViews.map((o) => ({ ...o, status: statusById.get(o.id) ?? "EXPIRED" })) };
 }
 
-/** Tous les avis ouverts du marché (filtre de rareté), les plus hauts ou les plus récents d'abord. */
-export async function openOrdersBoard(input: { viewerId: string | null; locale: string; rarity: string | null; sort: "price" | "newest"; page: number; now?: Date }) {
+/**
+ * Tous les avis ouverts du marché (filtres de rareté et d'acquisition), les plus hauts ou les plus
+ * récents d'abord.
+ */
+export async function openOrdersBoard(input: {
+  viewerId: string | null;
+  locale: string;
+  rarity: string | null;
+  possession?: Possession;
+  sort: "price" | "newest";
+  page: number;
+  now?: Date;
+}) {
   const now = input.now ?? new Date();
   const page = Math.max(0, Math.min(200, Math.trunc(input.page)));
+  const card: Prisma.CardWhereInput = {
+    ...(input.rarity && { rarity: input.rarity }),
+    ...possessionCardWhere(input.possession ?? "all", input.viewerId),
+  };
   const rows = await prisma.buyOrder.findMany({
-    where: { ...sellable(now), ...(input.rarity && { card: { rarity: input.rarity } }) },
+    where: { ...sellable(now), ...(Object.keys(card).length > 0 && { card }) },
     orderBy: input.sort === "newest" ? [{ createdAt: "desc" }, { id: "desc" }] : bestFirst,
     skip: page * ORDERS_PAGE,
     take: ORDERS_PAGE + 1,

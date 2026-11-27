@@ -4,7 +4,7 @@ import type { AbstractIntlMessages } from "next-intl";
 // Les textes réservés au serveur et l'admin ne traversent pas le fournisseur public.
 export const CLIENT_NAMESPACES = [
   "account", "achievements", "ambassador", "arcadePromo", "auth", "battle", "boosters", "cardBack", "casino", "chat", "collection",
-  "common", "consent", "data", "discordJoin", "economy", "error", "event", "expedition", "footer", "friends", "prestige",
+  "common", "consent", "data", "discordJoin", "economy", "error", "event", "expedition", "footer", "fresco", "friends", "prestige",
   "fuda", "gifts", "header", "home", "incense", "kyaraImport", "legal", "locale", "mail", "market", "nav",
   "news", "notifications", "opening", "playerName", "presence", "privacy", "profile", "push", "pwa", "ranked", "rarity", "referralV2", "invite", "ennichi", "sealed",
   "listings", "showcase", "spoiler", "theme", "time", "trades", "v1Welcome", "v2Announcement", "wiki", "wishlist", "wrapped",

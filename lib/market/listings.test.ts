@@ -6,6 +6,7 @@ import {
   isListingOpen,
   listingExpiresAt,
   parseListingFilter,
+  parseListingPossession,
   uniqueWants,
   type TradeListingCheck,
   type ListingRules,
@@ -124,5 +125,15 @@ describe("outils", () => {
     expect(parseListingFilter(["mine", "all"])).toBe("mine");
     expect(parseListingFilter("nimporte")).toBe("all");
     expect(parseListingFilter(undefined)).toBe("all");
+    // L'acquisition est devenue un filtre à part
+    expect(parseListingFilter("missing")).toBe("all");
+  });
+
+  it("lit le filtre d'acquisition, ancien lien compris", () => {
+    expect(parseListingPossession(undefined, "acquises")).toBe("owned");
+    expect(parseListingPossession("canAccept", "manquantes")).toBe("missing");
+    expect(parseListingPossession("missing", undefined)).toBe("missing");
+    expect(parseListingPossession("missing", "acquises")).toBe("owned");
+    expect(parseListingPossession(undefined, "owned")).toBe("all");
   });
 });

@@ -30,9 +30,14 @@ import { ShowcaseHeading } from "./ShowcaseHeading";
 import { cardSizing, ShowcaseStage, type StageSlot } from "./ShowcaseStage";
 import { ShowcaseCardLink } from "./ShowcaseView";
 import { ThemePicker } from "./ThemePicker";
+import type { FrescoView } from "@/lib/fresco/view";
+import { FrescoPlate, useFrescoLabel } from "../fresco/FrescoPlate";
+import { FrescoStage } from "../fresco/FrescoStage";
+import { segmentedItemClass, segmentedTrackClass } from "../ui/Segmented";
+import { FrescoPicker } from "./FrescoPicker";
 
 type Slot = ShowcaseCard | null;
-type SheetName = "layout" | "theme" | "more" | "rename" | "delete" | null;
+type SheetName = "layout" | "theme" | "more" | "rename" | "delete" | "fresco" | null;
 type Status = "idle" | "saving" | "saved" | "error";
 
 const toolButton = "min-h-11 rounded-control border border-border bg-surface-2 px-3 text-sm font-bold disabled:opacity-40";
@@ -58,6 +63,9 @@ export function ShowcaseEditor({
   showcaseIds,
   isMain,
   startEditing = false,
+  fresco = null,
+  frescoFirst = false,
+  frescoChoices = null,
 }: {
   id: string;
   username: string;
@@ -76,8 +84,16 @@ export function ShowcaseEditor({
   /** Vitrine principale : la seule affichée sur le profil et visible par les autres joueurs. */
   isMain: boolean;
   startEditing?: boolean;
+  /** Fresque de la vitrine, telle que le joueur la possède (null : aucune). */
+  fresco?: FrescoView | null;
+  frescoFirst?: boolean;
+  /** Fresques dont le joueur a des fragments ; null tant qu'aucune fresque n'est publiée (bouton caché). */
+  frescoChoices?: readonly FrescoView[] | null;
 }) {
   const t = useTranslations("showcase");
+  const tFresco = useTranslations("fresco");
+  const frescoLabel = useFrescoLabel();
+  const [view, setView] = useState<"cards" | "fresco">(fresco && frescoFirst ? "fresco" : "cards");
   const router = useRouter();
   const renameId = useId();
   const [cards, setCards] = useState<Slot[]>(initialCards);
@@ -378,21 +394,46 @@ export function ShowcaseEditor({
             <button type="button" className={toolButton} onClick={fill} disabled={filled >= capacity || pending}>
               {t("editor.fill")}
             </button>
+            {frescoChoices && (
+              <button type="button" className={toolButton} onClick={() => setSheet("fresco")} aria-haspopup="dialog">
+                <span aria-hidden="true" lang="ja" className="mr-1 font-seal">
+                  絵
+                </span>
+                {tFresco("picker.button")}
+              </button>
+            )}
             <button type="button" className={toolButton} onClick={() => setSheet("more")} aria-haspopup="dialog">
               {t("editor.more")}
             </button>
           </div>
         )}
 
-        <ShowcaseStage
-          layout={layout}
-          theme={theme}
-          slots={slots}
-          label={t("stageLabel", { name: displayName, count: filled })}
-          slotRef={(i, el) => {
-            cells.current[i] = el;
-          }}
-        />
+        {fresco && !editing && (
+          <div role="group" aria-label={tFresco("view.label")} className={`${segmentedTrackClass} self-start`}>
+            {(["cards", "fresco"] as const).map((v) => (
+              <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} className={`${segmentedItemClass} min-h-11`}>
+                {tFresco(`view.${v}`)}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {fresco && view === "fresco" && !editing ? (
+          <>
+            <FrescoStage fresco={fresco} theme={theme} label={frescoLabel(fresco)} preload={frescoFirst} />
+            <FrescoPlate fresco={fresco} />
+          </>
+        ) : (
+          <ShowcaseStage
+            layout={layout}
+            theme={theme}
+            slots={slots}
+            label={t("stageLabel", { name: displayName, count: filled })}
+            slotRef={(i, el) => {
+              cells.current[i] = el;
+            }}
+          />
+        )}
 
         {editing && current && selected !== null && (
           <div className="flex flex-wrap items-center gap-2 rounded-card border border-border bg-surface p-3">
@@ -439,6 +480,21 @@ export function ShowcaseEditor({
           onClose={() => setPicking(null)}
           shownIds={shownIds}
           {...(picking === "multi" ? { multiple: { max: capacity - filled, onConfirm: addMany } } : { onPick: pickOne })}
+        />
+      )}
+
+      {sheet === "fresco" && frescoChoices && (
+        <FrescoPicker
+          showcaseId={id}
+          choices={frescoChoices}
+          current={fresco?.id ?? null}
+          first={frescoFirst}
+          onClose={() => setSheet(null)}
+          onSaved={() => {
+            setSheet(null);
+            setNotice(tFresco("picker.saved"));
+            router.refresh();
+          }}
         />
       )}
 

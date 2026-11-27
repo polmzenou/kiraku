@@ -3,11 +3,13 @@ import type { ReactNode } from "react";
 import { Fuda } from "@/components/fuda/Fuda";
 import { Link } from "@/i18n/navigation";
 import { orderNet } from "@/lib/market/buy-orders";
+import { POSSESSION_PARAM, possessionValue, type Possession } from "@/lib/market/possession";
 import { pushLater } from "@/server/market/queries";
 import { myOrders, openOrdersBoard, ordersYouCanFill, type OrderWithCard } from "@/server/market/buy-order-queries";
 import { expireDueWith } from "@/server/market/buy-order-core";
 import { prisma } from "@/server/db";
 import { ZeniCoin } from "../../layout/ZeniCoin";
+import { possessionLabels, PossessionLinks } from "../PossessionFilter";
 import { CancelOrder, SellToOrder } from "./OrderActions";
 
 /** Une carte cherchée : fuda, prix offert, acheteur et échéance, plus le geste possible. */
@@ -37,20 +39,37 @@ const grid = "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-
  * Onglet « Avis de recherche » du marché : ce que les autres cherchent et que le joueur possède
  * (vente en un clic), ses propres avis, puis tous les avis ouverts.
  */
-export async function OrdersTab({ userId, guest, locale, sort, page }: { userId: string; guest: boolean; locale: string; sort: "price" | "newest"; page: number }) {
+export async function OrdersTab({
+  userId,
+  guest,
+  locale,
+  sort,
+  page,
+  possession,
+}: {
+  userId: string;
+  guest: boolean;
+  locale: string;
+  sort: "price" | "newest";
+  page: number;
+  possession: Possession;
+}) {
   const now = new Date();
   // Ses avis échus rendent leurs Zeni dès qu'il les regarde, sans attendre le cron quotidien
   if (!guest) await expireDueWith(prisma, now, 20, pushLater, userId);
-  const [t, format, fillable, mine, board] = await Promise.all([
+  const [t, tFilters, format, fillable, mine, board] = await Promise.all([
     getTranslations("market.orders"),
+    getTranslations("market.filters"),
     getFormatter(),
     guest ? [] : ordersYouCanFill(userId, locale, now),
     guest ? null : myOrders(userId, locale, now),
-    openOrdersBoard({ viewerId: userId, locale, rarity: null, sort, page, now }),
+    openOrdersBoard({ viewerId: userId, locale, rarity: null, possession, sort, page, now }),
   ]);
   const date = (d: Date) => format.dateTime(d, { day: "numeric", month: "short" });
   const by = (o: OrderWithCard) => t("byShort", { name: o.mine ? t("you") : (o.buyerName ?? t("someone")) });
-  const pageHref = (p: number, s = sort) => `/marche?onglet=avis${s === "newest" ? "&tri=recent" : ""}${p > 0 ? `&page=${p}` : ""}`;
+  const href = (p: number, s: "price" | "newest", owned: string | null) =>
+    `/marche?onglet=avis${s === "newest" ? "&tri=recent" : ""}${owned ? `&${POSSESSION_PARAM}=${owned}` : ""}${p > 0 ? `&page=${p}` : ""}`;
+  const pageHref = (p: number, s = sort) => href(p, s, possessionValue(possession));
 
   return (
     <div className="flex flex-col gap-8">
@@ -112,6 +131,12 @@ export async function OrdersTab({ userId, guest, locale, sort, page }: { userId:
             ))}
           </nav>
         </div>
+        <PossessionLinks
+          value={possession}
+          label={tFilters("possession.label")}
+          labels={possessionLabels(tFilters)}
+          href={(owned) => href(0, sort, owned)}
+        />
         {board.items.length === 0 ? (
           <p className="text-sm text-text-muted">{t("allEmpty")}</p>
         ) : (

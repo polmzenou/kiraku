@@ -149,7 +149,7 @@ export async function signalsFor(userId: string): Promise<SignalRow[]> {
   });
 }
 
-export type SharedIp = { value: string; accounts: number; usernames: { id: string; username: string }[] };
+export type SharedIp = { value: string; accounts: number; usernames: { id: string; username: string; banned: boolean }[] };
 
 /** IP partagées par plusieurs comptes, les plus partagées d'abord (`prefix` : recherche de l'admin). */
 export async function sharedIps(options: { prefix?: string; take: number }): Promise<SharedIp[]> {
@@ -165,12 +165,33 @@ export async function sharedIps(options: { prefix?: string; take: number }): Pro
     LIMIT ${options.take}`;
   const users = await prisma.user.findMany({
     where: { id: { in: [...new Set(rows.flatMap((r) => r.ids))] } },
-    select: { id: true, username: true },
+    select: { id: true, username: true, bannedAt: true },
   });
-  const names = new Map(users.map((u) => [u.id, u]));
+  const names = new Map(users.map((u) => [u.id, { id: u.id, username: u.username, banned: u.bannedAt !== null }]));
   return rows.map((r) => ({
     value: r.value,
     accounts: r.accounts,
     usernames: r.ids.flatMap((id) => names.get(id) ?? []),
   }));
+}
+
+export type BannedAccount = { id: string; username: string; email: string | null; isGuest: boolean; bannedAt: Date; lastSeenAt: Date | null };
+
+/** Comptes bannis (filtre « Comptes bannis » de /admin/multi-comptes), les plus récents d'abord. */
+export async function bannedAccounts(options: { q: string; take: number }): Promise<{ rows: BannedAccount[]; total: number }> {
+  const where = {
+    bannedAt: { not: null },
+    anonymizedAt: null,
+    ...(options.q ? { username: { contains: options.q, mode: "insensitive" as const } } : {}),
+  };
+  const [rows, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      orderBy: [{ bannedAt: "desc" }, { id: "asc" }],
+      take: options.take,
+      select: { id: true, username: true, email: true, isGuest: true, bannedAt: true, lastSeenAt: true },
+    }),
+    prisma.user.count({ where }),
+  ]);
+  return { rows: rows.map((r) => ({ ...r, bannedAt: r.bannedAt! })), total };
 }
