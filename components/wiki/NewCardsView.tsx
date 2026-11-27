@@ -1,5 +1,5 @@
 import { useFormatter, useTranslations } from "next-intl";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { BoosterArt } from "@/components/boosters/BoosterArt";
 import { NewBadge } from "@/components/catalog/NewBadge";
 import { CardBack } from "@/components/fuda/CardBack";
@@ -92,7 +92,7 @@ function CardTile({ item, index, reveal, locale }: { item: NewCardItem; index: n
  * Page des nouvelles cartes : la dernière sortie (créations de l'admin publiées le même jour), révélée
  * carte par carte, avec les boosters du moment qui la contiennent ; les sorties précédentes repliées.
  */
-export function NewCardsView({ latest, previous, boosters, badgeUntil, timeZone, locale }: {
+export function NewCardsView({ latest, previous, boosters, badgeUntil, timeZone, locale, tabs }: {
   latest: ReleaseView | null;
   previous: ReleaseView[];
   boosters: ReleaseBooster[];
@@ -100,6 +100,8 @@ export function NewCardsView({ latest, previous, boosters, badgeUntil, timeZone,
   badgeUntil: string | null;
   timeZone: string;
   locale: string;
+  /** Onglets « Nouvelles cartes · Nouvelles fresques » (absents tant qu'aucune fresque n'est publiée). */
+  tabs?: ReactNode;
 }) {
   const t = useTranslations("wiki.newCards");
   const tWiki = useTranslations("wiki");
@@ -139,6 +141,8 @@ export function NewCardsView({ latest, previous, boosters, badgeUntil, timeZone,
         <span aria-hidden="true">/</span>
         <span className="text-text">{t("title")}</span>
       </nav>
+
+      {tabs}
 
       <header className="flex flex-col gap-2">
         <SectionTitle

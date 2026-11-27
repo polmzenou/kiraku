@@ -8,6 +8,7 @@ import { MARKET_SORTS, type MarketParams } from "@/lib/market/filters";
 import { badgeClasses } from "../ui/Badge";
 import { buttonClasses } from "../ui/Button";
 import { inputClass, selectClass } from "../ui/Field";
+import { possessionLabels, PossessionRadios } from "./PossessionFilter";
 
 const input = inputClass;
 
@@ -22,7 +23,10 @@ export async function MarketFilters({ params }: { params: MarketParams }) {
   const RARITIES = visibleRarities(order, published, params.rarity ? [params.rarity] : []);
   const [t, tRarity] = await Promise.all([getTranslations("market.filters"), getTranslations("rarity")]);
   const reset = params.tab === "all" ? "/marche" : `/marche?onglet=${params.tab}`;
-  const count = [params.rarity, params.q || null, params.minPrice, params.maxPrice, params.buyout || null].filter((v) => v !== null).length;
+  // « Mes ventes » : toutes les cartes sont au vendeur, le filtre d'acquisition n'y apparaît pas
+  const withPossession = params.tab !== "selling";
+  const possession = withPossession && params.possession !== "all" ? params.possession : null;
+  const count = [params.rarity, params.q || null, params.minPrice, params.maxPrice, params.buyout || null, possession].filter((v) => v !== null).length;
   return (
     <details open={count > 0} className="group lacquer rounded-card">
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 font-bold [&::-webkit-details-marker]:hidden">
@@ -69,6 +73,7 @@ export async function MarketFilters({ params }: { params: MarketParams }) {
           {t("maxPrice")}
           <input type="number" name="max" min={1} inputMode="numeric" defaultValue={params.maxPrice ?? ""} className={input} />
         </label>
+        {withPossession && <PossessionRadios value={params.possession} legend={t("possession.label")} labels={possessionLabels(t)} />}
         <label className="col-span-2 flex min-h-11 items-center gap-2 text-sm md:col-span-3">
           <input type="checkbox" name="immediat" value="1" defaultChecked={params.buyout} className="choice" />
           {t("buyout")}

@@ -3,6 +3,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { CardView, OpenedCardView } from "@/lib/boosters/view";
 import { normalizeSearch, SEARCH_MAX_LENGTH } from "@/lib/catalog/search";
 import type { ListingFilter } from "@/lib/market/listings";
+import type { Possession } from "@/lib/market/possession";
 import { cardViews } from "../boosters/display";
 import { copyMarksOf, withCopy } from "../prestige/copy-marks";
 import { ownedCardIds } from "../collection/owned";
@@ -10,6 +11,7 @@ import { promisedCopyWhere, type PromisedCopy } from "../collection/transfer";
 import { prisma } from "../db";
 import { playerRefSelect as playerSelect, toPlayerRef, type PlayerRef } from "../profile/decor";
 import { expireListingsFor } from "./listing-core";
+import { possessionCardWhere } from "./possession";
 
 // Lectures des échanges ouverts du Marché : onglets « Échanges » et « Mes échanges » de /marche.
 // Seuls des champs publics des autres joueurs sortent d'ici (pseudo, avatar, statut invité).
@@ -73,6 +75,8 @@ export async function listListings(input: {
   viewerId: string;
   q: string;
   filter: ListingFilter;
+  /** Acquises ou non acquises : se combine avec `filter`. */
+  possession?: Possession;
   cursor: string | null;
   locale: string;
   /** Lien direct depuis Discord : cible une annonce sans contourner les filtres d'accès. */
@@ -82,11 +86,13 @@ export async function listListings(input: {
   const now = input.now ?? new Date();
   const q = normalizeSearch(input.q.slice(0, SEARCH_MAX_LENGTH));
   const blocked = await blockedIds(input.viewerId);
-  const others = input.filter === "missing" || input.filter === "canAccept";
+  const possession = possessionCardWhere(input.possession ?? "all", input.viewerId);
+  // Filtres tournés vers les annonces des autres : les siennes en sortent
+  const others = possession !== null || input.filter === "canAccept";
   const excluded = others ? [...blocked, input.viewerId] : blocked;
   const and: Prisma.TradeListingWhereInput[] = [];
   if (q) and.push({ OR: [{ card: { searchText: { contains: q } } }, { owner: { username: { contains: q, mode: "insensitive" } } }] });
-  if (input.filter === "missing") and.push({ card: { copies: { none: { ownerId: input.viewerId } } } });
+  if (possession) and.push({ card: possession });
   if (input.filter === "canAccept") and.push({ wants: { some: { card: { copies: { some: { ownerId: input.viewerId, status: "COLLECTION" } } } } } });
   if (input.filter === "mine") and.push({ offers: { some: { bidderId: input.viewerId, status: "PENDING" } } });
   const where: Prisma.TradeListingWhereInput = {

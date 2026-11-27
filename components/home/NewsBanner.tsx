@@ -6,7 +6,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { BoosterArt } from "@/components/boosters/BoosterArt";
 import { Fuda } from "@/components/fuda/Fuda";
 import { Link } from "@/i18n/navigation";
-import { NEW_CARDS_PATH, NEWS_ICONS, type NewsCardView, type NewsIcon, type NewsItemView, type NewsTone, type NewsVisualView } from "@/lib/home/news";
+import { NEW_CARDS_PATH, NEW_FRESCOES_PATH, NEWS_ICONS, type NewsCardView, type NewsIcon, type NewsItemView, type NewsTone, type NewsVisualView } from "@/lib/home/news";
 import "./news.css";
 
 // Motif wagara de chaque couleur, au trait discret (--wl) ; un booster garde le sien (le kikkō doré de
@@ -96,7 +96,9 @@ export function NewsBanner({ item, index, count, active, first }: { item: NewsIt
       ? { kind: "internal" as const, href: `/?b=${booster.slug}`, label: t("openBooster") }
       : item.tag === "NEW_CARDS"
         ? { kind: "internal" as const, href: NEW_CARDS_PATH, label: t("seeNewCards") }
-        : item.link;
+        : item.tag === "NEW_FRESCO"
+          ? { kind: "internal" as const, href: NEW_FRESCOES_PATH, label: t("seeNewFrescoes") }
+          : item.link;
 
   let art: ReactNode = null;
   if (visual.kind === "cards") art = <CardFan cards={visual.cards} active={active} />;

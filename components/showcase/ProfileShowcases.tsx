@@ -6,8 +6,12 @@ import { Link } from "@/i18n/navigation";
 import type { ShowcaseCard } from "@/lib/collection/view";
 import type { ShowcaseLayoutId } from "@/lib/showcase/layouts";
 import { SHOWCASE_THEMES, type ShowcaseThemeId } from "@/lib/showcase/theme-registry";
+import type { FrescoView } from "@/lib/fresco/view";
+import { FrescoPlate, useFrescoLabel } from "../fresco/FrescoPlate";
+import { FrescoStage } from "../fresco/FrescoStage";
 import { MakeMainButton } from "./MakeMainButton";
 import { ShowcaseView } from "./ShowcaseView";
+import { ShowcaseViewSwitch } from "./ShowcaseViewSwitch";
 import "./showcase.css";
 
 export type ShelfShowcase = {
@@ -59,6 +63,7 @@ export function ProfileShowcases({
   owned,
   linkBase,
   create,
+  mainFresco = null,
 }: {
   username: string;
   isOwner: boolean;
@@ -70,17 +75,49 @@ export function ProfileShowcases({
   linkBase: "/collection" | "/wiki";
   /** Bouton « Nouvelle vitrine » (propriétaire, sous le maximum). */
   create?: ReactNode;
+  /** Fresque de la vitrine principale (fragments du propriétaire seulement) : ajoute la mini-navigation. */
+  mainFresco?: { view: FrescoView; first: boolean } | null;
 }) {
   const t = useTranslations("showcase");
+  const frescoLabel = useFrescoLabel();
   const [main, ...others] = showcases;
   const href = (id: string) => `/u/${username}/vitrines/${id}`;
   const ids = showcases.map((s) => s.id);
 
   return (
     <section className="flex flex-col gap-4">
-      <SectionTitle kanji="飾" title={isOwner ? t("title") : t("titlePublic")} />
+      {!(main && mainFresco) && <SectionTitle kanji="飾" title={isOwner ? t("title") : t("titlePublic")} />}
 
-      {main ? (
+      {main && mainFresco ? (
+        // Vitrine avec fresque : « Cartes · Fresque » à côté du titre, même décor pour les deux vues
+        <article className="flex flex-col gap-3">
+          <ShowcaseViewSwitch
+            title={<SectionTitle kanji="飾" title={isOwner ? t("title") : t("titlePublic")} />}
+            initial={mainFresco.first ? "fresco" : "cards"}
+            cards={
+              <>
+                <ShowcaseView
+                  name={main.name}
+                  layout={main.layout}
+                  theme={main.theme}
+                  cards={mainCards}
+                  owned={owned}
+                  linkBase={linkBase}
+                  isOwner={isOwner}
+                  preload={!mainFresco.first}
+                />
+                <MainPlate showcase={main} href={href(main.id)} isOwner={isOwner} />
+              </>
+            }
+            fresco={
+              <>
+                <FrescoStage fresco={mainFresco.view} theme={main.theme} label={frescoLabel(mainFresco.view)} preload={mainFresco.first} />
+                <FrescoPlate fresco={mainFresco.view} />
+              </>
+            }
+          />
+        </article>
+      ) : main ? (
         <article className="flex flex-col gap-3">
           {main.count > 0 || isOwner ? (
             <>

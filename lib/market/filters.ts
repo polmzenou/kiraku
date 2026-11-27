@@ -1,5 +1,6 @@
 import { RARITIES, type Rarity } from "../catalog/rarity";
 import { normalizeSearch, SEARCH_MAX_LENGTH } from "../catalog/search";
+import { parsePossession, POSSESSION_PARAM, possessionValue, type Possession } from "./possession";
 
 // Filtres, tri et curseur de la page /marche, portés par l'URL (une recherche se partage).
 // Pur : server/market/queries.ts traduit ces paramètres en requête Prisma.
@@ -23,6 +24,8 @@ export type MarketParams = {
   maxPrice: number | null;
   /** Seulement les ventes avec achat immédiat. */
   buyout: boolean;
+  /** Cartes que le joueur a déjà (au moins un exemplaire) ou pas encore. */
+  possession: Possession;
 };
 
 export const DEFAULT_MARKET_PARAMS: MarketParams = {
@@ -33,6 +36,7 @@ export const DEFAULT_MARKET_PARAMS: MarketParams = {
   minPrice: null,
   maxPrice: null,
   buyout: false,
+  possession: "all",
 };
 
 type RawParams = Record<string, string | string[] | undefined>;
@@ -69,6 +73,7 @@ export function parseMarketParams(raw: RawParams, knownRarities: readonly string
     minPrice,
     maxPrice,
     buyout: one(raw, "immediat") === "1",
+    possession: parsePossession(one(raw, POSSESSION_PARAM)),
   };
 }
 
@@ -82,6 +87,8 @@ export function marketSearchParams(p: MarketParams): URLSearchParams {
   if (p.minPrice !== null) s.set("min", String(p.minPrice));
   if (p.maxPrice !== null) s.set("max", String(p.maxPrice));
   if (p.buyout) s.set("immediat", "1");
+  const possession = possessionValue(p.possession);
+  if (possession) s.set(POSSESSION_PARAM, possession);
   return s;
 }
 

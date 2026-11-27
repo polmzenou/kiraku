@@ -677,6 +677,11 @@ export const SETTING_SCHEMAS = {
   "anilist.requestDelayMs": z.number().int().min(500).max(60_000),
   // Seuils du bandeau de consommation du serveur (/admin/general), en % de la capacité
   "usage.alertThresholds": alertThresholdsSchema,
+  // Fresques 絵 (/admin/fresques) : interrupteur des chutes, chance par booster ouvert (points de base),
+  // badge « Nouveau » de l'onglet « Nouvelles fresques » en heures après la publication (0 = jamais)
+  "fresco.enabled": z.boolean(),
+  "fresco.dropRate": z.number().int().min(0).max(10_000),
+  "fresco.newHours": z.number().int().min(0).max(720),
 } as const;
 
 export type SettingKey = keyof typeof SETTING_SCHEMAS;
@@ -1112,6 +1117,10 @@ export const SETTING_DEFAULTS: { [K in SettingKey]: SettingValue<K> } = {
   "anilist.perPage": 50,
   "anilist.requestDelayMs": 2100, // 30 requêtes par minute (limite actuelle d'AniList)
   "usage.alertThresholds": DEFAULT_ALERT_THRESHOLDS,
+  "fresco.enabled": true,
+  // 1 booster sur 18 : la chance qu'une des 4 cartes d'un booster soit une Épique (1,4 % par carte)
+  "fresco.dropRate": 550,
+  "fresco.newHours": 72,
 };
 
 /**

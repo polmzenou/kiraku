@@ -24,7 +24,12 @@ type Db = PrismaClient | Prisma.TransactionClient;
 export const REFERRAL_LOT_CREATE = "REFERRAL_LOT_CREATE";
 export const REFERRAL_LOT_UPDATE = "REFERRAL_LOT_UPDATE";
 
-const ELSEWHERE = { select: { missions: true, shopItems: true, expeditionTypes: true } } as const;
+// Fresques : un lot qu'une fresque verse (fragment, ligne, colonne, complète) sert ailleurs que le parrainage
+const ELSEWHERE = {
+  select: { missions: true, shopItems: true, expeditionTypes: true, frescoPieceLots: true, frescoRowLots: true, frescoColumnLots: true, frescoCompleteLots: true },
+} as const;
+
+type ElsewhereCount = Record<keyof (typeof ELSEWHERE)["select"], number>;
 
 async function settingsWith(db: Db, keys: readonly SettingKey[]): Promise<Record<string, unknown>> {
   const rows = await db.gameSetting.findMany({ where: { key: { in: [...keys] } }, select: { key: true, value: true } });
@@ -46,8 +51,8 @@ async function lotStateWith(db: Db): Promise<LotState> {
   };
 }
 
-const elsewhere = (lotId: string, count: { missions: number; shopItems: number; expeditionTypes: number }, state: LotState) =>
-  count.missions + count.shopItems + count.expeditionTypes > 0 || state.otherSettings.has(lotId);
+const elsewhere = (lotId: string, count: ElsewhereCount, state: LotState) =>
+  Object.values(count).some((n) => n > 0) || state.otherSettings.has(lotId);
 
 /** Droit de l'équipe entière sur ce lot (le DEV compris), relu en base. */
 export async function referralLotAccessWith(db: Db, lotId: string): Promise<ReferralLotAccess | "NOT_FOUND"> {

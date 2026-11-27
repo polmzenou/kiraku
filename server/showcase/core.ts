@@ -218,3 +218,23 @@ export async function reorderShowcasesWith(db: PrismaClient, userId: string, ids
     }
   });
 }
+
+/**
+ * Fresque mise en avant dans une vitrine (ou aucune). Le joueur doit en avoir au moins un fragment, d'une
+ * fresque publiée ou archivée : un brouillon ne se montre jamais. `first` : la vitrine s'ouvre sur la fresque.
+ */
+export async function setShowcaseFrescoWith(db: PrismaClient, userId: string, input: { showcaseId: string; frescoId: string | null; first: boolean }): Promise<void> {
+  await db.$transaction(async (tx) => {
+    await lockOwner(tx, userId);
+    await ownedShowcase(tx, userId, input.showcaseId);
+    if (input.frescoId) {
+      const owned = await tx.userFrescoPiece.count({ where: { userId, frescoId: input.frescoId, fresco: { status: { in: ["PUBLISHED", "ARCHIVED"] } } } });
+      if (owned === 0) throw new ShowcaseError("NOT_OWNED");
+    }
+    await tx.showcase.update({
+      where: { id: input.showcaseId },
+      data: { frescoId: input.frescoId, frescoFirst: input.frescoId !== null && input.first },
+      select: { id: true },
+    });
+  });
+}
