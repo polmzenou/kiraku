@@ -1,7 +1,9 @@
 import type { SealedKind } from "@/lib/boosters/draw";
 import type { CardView, DroppedSealedView, OpenedBoosterView, OpenedCardView } from "@/lib/boosters/view";
 import type { Rarity } from "@/lib/catalog/rarity";
+import { rollFrescoDrops } from "@/lib/fresco/draw";
 import { cellCount } from "@/lib/fresco/grid";
+import type { Rng } from "@/lib/rng";
 import { earnedRewards } from "@/lib/fresco/progress";
 import type { FrescoDropView } from "@/lib/fresco/view";
 
@@ -116,16 +118,25 @@ export function testBoosters({ pool, scenario, count, cardsPerBooster, run }: {
 export type OpeningTestFresco = { id: string; name: string; cols: number; rows: number; imageUrl: string; pieces: { position: number; imageUrl: string }[] };
 
 /**
- * Fragment factice glissé dans le dernier booster : à chaque ouverture la fresque avance d'une case (dans
- * l'ordre), si bien qu'on voit passer une ligne, une colonne, puis la fresque complète.
+ * Fragment factice glissé dans le dernier booster, tiré comme en jeu (rollFrescoDrops) : une case manquante au
+ * hasard, jamais deux fois la même. `before` : cases déjà tombées sur le banc ; une fresque complète repart de zéro.
+ * Renvoie le fragment et les cases possédées après lui.
  */
-export function testFrescoDrop(fresco: OpeningTestFresco, run: number): FrescoDropView<OpenedCardView> {
+export function testFrescoDrop(fresco: OpeningTestFresco, before: ReadonlySet<number>, rng: Rng): { drop: FrescoDropView<OpenedCardView>; owned: Set<number> } {
   const grid = { cols: fresco.cols, rows: fresco.rows };
   const total = cellCount(grid);
-  const position = (run - 1) % total;
-  const before = new Set(Array.from({ length: position }, (_, p) => p));
-  const owned = fresco.pieces.filter((p) => p.position <= position);
-  return {
+  const start = before.size >= total ? new Set<number>() : new Set(before);
+  const [rolled] = rollFrescoDrops(rng, {
+    count: 1,
+    rate: 10_000,
+    boosterTypeId: "banc",
+    candidates: [{ id: fresco.id, grid, weight: 1, boosterTypeIds: [] }],
+    owned: new Map([[fresco.id, start]]),
+  });
+  const position = rolled!.position;
+  const after = new Set(start).add(position);
+  const owned = fresco.pieces.filter((p) => after.has(p.position));
+  const drop: FrescoDropView<OpenedCardView> = {
     fresco: {
       id: fresco.id,
       name: fresco.name,
@@ -136,6 +147,7 @@ export function testFrescoDrop(fresco: OpeningTestFresco, run: number): FrescoDr
       spoilerKey: null,
     },
     position,
-    rewards: earnedRewards(before, [position], grid).map((r) => ({ ...r, lotName: null, reward: null })),
+    rewards: earnedRewards(start, [position], grid).map((r) => ({ ...r, lotName: null, reward: null })),
   };
+  return { drop, owned: after };
 }

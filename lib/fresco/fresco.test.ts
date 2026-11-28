@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { seededRng } from "../rng";
 import { rollFrescoDrops, type FrescoCandidate } from "./draw";
 import { cellOf, cropAxis, cropToGrid, DEFAULT_GRID, positionOf, tiles } from "./grid";
+import { gapMaskCss, gapMaskSvg } from "./mask";
 import { frescoOdds } from "./odds";
 import { completedColumns, completedRows, earnedRewards, isComplete, missingPositions, rewardRef } from "./progress";
 
@@ -137,5 +138,23 @@ describe("chances affichées", () => {
     expect(frescoOdds(550, 12)).toEqual({ oneIn: 18, boostersToComplete: 218 });
     expect(frescoOdds(550, 12, 2).boostersToComplete).toBe(436);
     expect(frescoOdds(0, 12)).toEqual({ oneIn: null, boostersToComplete: null });
+  });
+});
+
+
+describe("masque des cases vides", () => {
+  it("une forme d'un seul tenant : les fragments du bord débordent du cadre, les voisins se recouvrent", () => {
+    const svg = gapMaskSvg(new Set([0, 1, 5]), grid)!;
+    expect(svg).toContain('viewBox="0 0 400 300"');
+    expect(svg).toContain('<rect x="-60" y="-60" width="161" height="161"/>');
+    expect(svg).toContain('<rect x="99" y="-60" width="102" height="161"/>');
+    expect(svg).toContain('<rect x="99" y="99" width="102" height="102"/>');
+    expect(svg.match(/<rect/g)).toHaveLength(3);
+    expect(svg).toContain("feMorphology");
+  });
+
+  it("rien pour une fresque complète, une url de données sinon", () => {
+    expect(gapMaskSvg(new Set(all), grid)).toBeNull();
+    expect(gapMaskCss(new Set([3]), grid)).toMatch(/^url\("data:image\/svg\+xml,%3Csvg/);
   });
 });

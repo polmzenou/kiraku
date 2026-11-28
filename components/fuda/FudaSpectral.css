@@ -17,6 +17,9 @@
   background: linear-gradient(transparent 40%, rgb(8 14 26 / .6) 74%, rgb(6 10 20 / .88)); }
 .fuda[data-spectral][data-full-art] .kn-bank { background: none; }
 .fuda[data-spectral] .kn-name { text-shadow: 0 0 6px rgb(159 227 236 / .55), 0 1px 3px rgb(0 0 0 / .85); }
+/* Esprit en gris (wiki : pas encore découverte ; vente close) : la forme spectrale reste, l'image, le voile et le canvas
+   passent en niveaux de gris ensemble */
+.fuda[data-spectral][data-monochrome] .kn-art { filter: grayscale(1); }
 
 /* Souffle du repli sur les cartes vivantes (pas les grilles figées) */
 @keyframes kn-spirit-breathe { from { opacity: 1; } to { opacity: .74; } }
