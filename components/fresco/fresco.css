@@ -23,6 +23,53 @@
   height: calc(100% / var(--fr-rows) + 1px);
   overflow: hidden;
 }
+/* Fondu dans le décor, sur le pourtour de la fresque : chaque côté (--fe-t, --fe-r, --fe-b, --fe-l, en % de la
+   boîte) s'efface en douceur, courbe adoucie, sans palier. Fresque complète : sur l'image ; incomplète : sur le calque
+   des fragments (.fr-art), avec en plus le masque des cases vides (--fr-gaps, lib/fresco/mask.ts) : un seul masque pour
+   tous les fragments, donc ni joint ni double transparence entre deux voisins, et des coins rentrants arrondis. */
+.fr-soft,
+.fr-art {
+  /* 28 % d'un fragment, rapporté à toute l'image */
+  --fe-l: calc(28% / var(--fr-cols));
+  --fe-r: calc(28% / var(--fr-cols));
+  --fe-t: calc(28% / var(--fr-rows));
+  --fe-b: calc(28% / var(--fr-rows));
+  --fr-fade-x: linear-gradient(
+    to right,
+    transparent 0%,
+    rgb(0 0 0 / 0.18) calc(var(--fe-l) * 0.3),
+    rgb(0 0 0 / 0.62) calc(var(--fe-l) * 0.65),
+    #000 var(--fe-l),
+    #000 calc(100% - var(--fe-r)),
+    rgb(0 0 0 / 0.62) calc(100% - var(--fe-r) * 0.65),
+    rgb(0 0 0 / 0.18) calc(100% - var(--fe-r) * 0.3),
+    transparent 100%
+  );
+  --fr-fade-y: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgb(0 0 0 / 0.18) calc(var(--fe-t) * 0.3),
+    rgb(0 0 0 / 0.62) calc(var(--fe-t) * 0.65),
+    #000 var(--fe-t),
+    #000 calc(100% - var(--fe-b)),
+    rgb(0 0 0 / 0.62) calc(100% - var(--fe-b) * 0.65),
+    rgb(0 0 0 / 0.18) calc(100% - var(--fe-b) * 0.3),
+    transparent 100%
+  );
+  -webkit-mask-image: var(--fr-gaps, linear-gradient(#000, #000)), var(--fr-fade-x), var(--fr-fade-y);
+  -webkit-mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-composite: source-in;
+  mask-image: var(--fr-gaps, linear-gradient(#000, #000)), var(--fr-fade-x), var(--fr-fade-y);
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  mask-composite: intersect;
+}
+.fr-art {
+  position: absolute;
+  inset: 0;
+}
+
 .fr-cell[data-missing]::after {
   content: "";
   position: absolute;

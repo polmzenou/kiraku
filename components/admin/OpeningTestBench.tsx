@@ -44,6 +44,8 @@ export function OpeningTestBench({
   const [scenario, setScenario] = useState<OpeningTestScenario>("all");
   const [frescoId, setFrescoId] = useState("");
   const fresco = frescoes.find((f) => f.id === frescoId) ?? null;
+  // Cases déjà tombées sur le banc, par fresque : chaque ouverture en tire une nouvelle au hasard
+  const frescoOwned = useRef(new Map<string, Set<number>>());
   const run = useRef(0);
   const type = types.find((x) => x.slug === slug) ?? types[0];
 
@@ -57,7 +59,11 @@ export function OpeningTestBench({
       const drop = testDrop(scenario, run.current);
       const boosters = testBoosters({ pool, scenario, count: drop ? count - 1 : count, cardsPerBooster: type?.cards ?? 5, run: run.current });
       // Fresque choisie : un fragment glissé dans le dernier booster, la fresque avance d'une case à chaque ouverture
-      if (fresco && boosters.length > 0) boosters[boosters.length - 1] = { ...boosters[boosters.length - 1], fresco: testFrescoDrop(fresco, run.current) };
+      if (fresco && boosters.length > 0) {
+        const { drop: piece, owned } = testFrescoDrop(fresco, frescoOwned.current.get(fresco.id) ?? new Set(), (max) => Math.floor(Math.random() * max));
+        frescoOwned.current.set(fresco.id, owned);
+        boosters[boosters.length - 1] = { ...boosters[boosters.length - 1], fresco: piece };
+      }
       return { ok: true, boosters, drops: drop ? [{ ...drop, position: count - 1 }] : [], state: initialState, featuredCount: 0, zeniSpent: 0, credits: 0 };
     },
     [pool, scenario, type?.cards, initialState, fresco],

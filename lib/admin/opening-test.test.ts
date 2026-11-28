@@ -5,7 +5,8 @@ import type { CardView } from "@/lib/boosters/view";
 import { BASE_DEFINITIONS, orderedKeys } from "@/lib/catalog/definitions";
 import fr from "@/messages/fr.json";
 import en from "@/messages/en.json";
-import { OPENING_TEST_SCENARIOS, testBoosters, type OpeningTestPool } from "./opening-test";
+import { seededRng } from "@/lib/rng";
+import { OPENING_TEST_SCENARIOS, testBoosters, testFrescoDrop, type OpeningTestPool } from "./opening-test";
 
 const card = (rarity: string, i: number): CardView => ({
   cardId: `${rarity}-${i}`, anilistId: i, series: "Série", name: `Carte ${i}`, nameNative: null,
@@ -64,5 +65,32 @@ describe("rayon qui sort du booster", () => {
   it("AR et Gold gardent leur couleur", () => {
     expect(leakFor("AR", BASE_DEFINITIONS)).not.toBe(LEAK_COLOR.MYTHIC);
     expect(leakFor("GOLD", BASE_DEFINITIONS)).not.toBe(LEAK_COLOR.MYTHIC);
+  });
+});
+
+describe("fragment de fresque du banc", () => {
+  const fresco = {
+    id: "fr",
+    name: "Banc",
+    cols: 4,
+    rows: 3,
+    imageUrl: "/full.webp",
+    pieces: Array.from({ length: 12 }, (_, position) => ({ position, imageUrl: `/${position}.webp` })),
+  };
+
+  it("tire les cases au hasard, sans doublon, jusqu'à la fresque complète puis repart de zéro", () => {
+    let owned = new Set<number>();
+    const order: number[] = [];
+    for (let i = 0; i < 12; i++) {
+      const next = testFrescoDrop(fresco, owned, seededRng(i + 3));
+      order.push(next.drop.position);
+      owned = next.owned;
+    }
+    expect(new Set(order).size).toBe(12);
+    expect(order).not.toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    const last = testFrescoDrop(fresco, new Set(order.slice(0, 11)), seededRng(1));
+    expect(last.drop.fresco.fullImageUrl).toBe("/full.webp");
+    expect(last.drop.rewards.at(-1)).toEqual({ kind: "COMPLETE", index: 0, lotName: null, reward: null });
+    expect(testFrescoDrop(fresco, owned, seededRng(2)).owned.size).toBe(1);
   });
 });

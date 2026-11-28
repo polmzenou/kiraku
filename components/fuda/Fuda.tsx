@@ -225,8 +225,9 @@ export function Fuda({
   const definition = definitions.find((r) => r.key === card.rarity);
   const tier = BASE_RARITIES.indexOf(fxTier(card.rarity, definitions));
   const visual = resolveAppearance(definition?.appearance, card.appearance);
-  // Esprit : illustration spectrale ; le canvas WebGL ne vit que sur les grandes cartes animées
-  const spectral = !locked && !monochrome && visual.spectral === true;
+  // Esprit : illustration spectrale, même en gris (carte pas encore découverte du wiki, vente close) : la forme
+  // reste celle de l'Esprit, seul le gris s'y ajoute. Le canvas WebGL ne vit que sur les grandes cartes animées.
+  const spectral = !locked && visual.spectral === true;
   const customStyle = {
     ...(visual.frame && { "--fuda-frame": visual.frame, "--fuda-frame-bg": visual.frame }),
     // Papier et encre réglés dans l'admin : le shikishi devient uni, dans ce papier
@@ -254,7 +255,7 @@ export function Fuda({
   const engraved = isEngraved(copy);
 
   const content = (
-    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} data-spectral={spectral || undefined} data-spoiler-u={spoilerKey} style={customStyle}>
+    <div className={`fuda relative isolate aspect-[5/7] w-full overflow-hidden ${l.frame}`} data-rarity={card.rarity} data-full-art={fullArt || undefined} data-spectral={spectral || undefined} data-monochrome={(spectral && monochrome) || undefined} data-spoiler-u={spoilerKey} style={customStyle}>
       {/* Papier posé en absolu dans le cadre : sa hauteur ne dépend pas d'un pourcentage (WebKit la résolvait mal sous aspect-ratio) */}
       <div className={`fuda-paper absolute ${l.inset} overflow-hidden ${l.inner}`}>
         <div className="kn-art">

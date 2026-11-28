@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
 import { cellCount, cellOf } from "@/lib/fresco/grid";
+import { gapMaskCss } from "@/lib/fresco/mask";
 import type { FrescoView as FrescoData } from "@/lib/fresco/view";
 import { spoilerImageAttrs } from "@/lib/spoiler";
 import "./fresco.css";
@@ -31,27 +32,32 @@ export function FrescoView({
   if (fresco.fullImageUrl) {
     return (
       <figure role="img" aria-label={label} className={`fr-board ${className}`} style={style}>
-        <div className="fr-full">
+        <div className="fr-full fr-soft">
           <Image src={fresco.fullImageUrl} alt="" fill sizes="(min-width: 768px) 576px, 100vw" preload={preload} draggable={false} {...spoiler} />
         </div>
       </figure>
     );
   }
   const pieces = new Map(fresco.pieces.map((p) => [p.position, p.imageUrl]));
+  const cells = Array.from({ length: cellCount(fresco) }, (_, position) => ({ position, ...cellOf(position, fresco), url: pieces.get(position) }));
+  // Un seul calque pour tous les fragments possédés : fondu sur le pourtour et face aux cases vides (fresco.css)
+  const art = { "--fr-gaps": gapMaskCss(new Set(pieces.keys()), fresco) ?? undefined } as CSSProperties;
   return (
     <figure role="img" aria-label={label} className={`fr-board ${className}`} style={style}>
-      {Array.from({ length: cellCount(fresco) }, (_, position) => {
-        const { row, col } = cellOf(position, fresco);
-        const url = pieces.get(position);
-        const cell = { "--fr-row": row, "--fr-col": col } as CSSProperties;
-        return url ? (
-          <div key={position} className="fr-cell" data-owned="" data-fresh={fresh === position ? "" : undefined} style={cell}>
-            <Image src={url} alt="" fill sizes="(min-width: 768px) 144px, 25vw" preload={preload && position < 4} draggable={false} {...spoiler} />
-          </div>
-        ) : (
-          <div key={position} className="fr-cell" data-missing="" style={cell} />
-        );
-      })}
+      {cells
+        .filter((c) => !c.url)
+        .map((c) => (
+          <div key={c.position} className="fr-cell" data-missing="" style={{ "--fr-row": c.row, "--fr-col": c.col } as CSSProperties} />
+        ))}
+      <div className="fr-art" style={art}>
+        {cells.map((c) =>
+          c.url ? (
+            <div key={c.position} className="fr-cell" data-owned="" data-fresh={fresh === c.position ? "" : undefined} style={{ "--fr-row": c.row, "--fr-col": c.col } as CSSProperties}>
+              <Image src={c.url} alt="" fill sizes="(min-width: 768px) 144px, 25vw" preload={preload && c.position < 4} draggable={false} {...spoiler} />
+            </div>
+          ) : null,
+        )}
+      </div>
     </figure>
   );
 }
